@@ -1,0 +1,7 @@
+{
+  "name": "SubSharer",
+  "description": "A premium subscription sharing marketplace and dashboard allowing users to split costs on digital services securely.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
