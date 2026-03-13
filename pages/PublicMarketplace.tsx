@@ -30,14 +30,7 @@ const PublicMarketplace: React.FC = () => {
     { icon: Zap, label: 'Productivity' },
   ];
 
-  const listings = [
-    { name: 'Netflix Premium', price: 4.99, icon: 'N', color: 'text-red-600', bg: 'bg-black' },
-    { name: 'Spotify Family', price: 2.99, icon: <Music className="w-6 h-6" />, color: 'text-black', bg: 'bg-[#1db954]' },
-    { name: 'YouTube Premium', price: 3.50, icon: 'YT', color: 'text-white', bg: 'bg-red-600' },
-    { name: 'Disney+ Bundle', price: 4.50, icon: 'D+', color: 'text-white', bg: 'bg-[#0063e5]' },
-    { name: 'Adobe CC', price: 15.00, icon: 'A', color: 'text-white', bg: 'bg-[#ff0000]' },
-    { name: 'Nintendo Online', price: 0.99, icon: <Gamepad className="w-6 h-6" />, color: 'text-white', bg: 'bg-[#e60012]' },
-  ];
+  const listings: { name: string; price: number; icon: any; color: string; bg: string }[] = [];
 
   const filteredListings = listings.filter(item => 
     item.name.toLowerCase().includes(searchQuery.toLowerCase())

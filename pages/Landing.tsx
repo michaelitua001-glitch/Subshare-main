@@ -151,7 +151,9 @@ const Landing: React.FC = () => {
                   <h3 className="font-bold text-lg text-white">My Dashboard</h3>
                   <p className="text-xs text-gray-400">Total Savings: $42.50/mo</p>
                 </div>
-                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80" className="w-10 h-10 rounded-full border-2 border-white/10" alt="User" />
+                <div className="w-10 h-10 rounded-full border-2 border-white/10 bg-primary/20 flex items-center justify-center text-primary font-bold">
+                  JD
+                </div>
               </div>
 
               <div className="space-y-4 mb-6">
@@ -273,15 +275,7 @@ const Landing: React.FC = () => {
                 List Subscription <ArrowRight className="w-4 h-4" />
               </button>
 
-              <div className="mt-10 flex items-center gap-3">
-                 <span className="text-xs text-gray-500">Recent payouts:</span>
-                 <div className="flex -space-x-2">
-                   {[1,2].map(i => (
-                     <img key={i} src={`https://picsum.photos/seed/${i+50}/30/30`} className="w-6 h-6 rounded-full border border-[#131022]" alt="User" />
-                   ))}
-                   <div className="w-6 h-6 rounded-full bg-[#1A1729] flex items-center justify-center text-[8px] font-bold border border-white/10">+$12</div>
-                 </div>
-              </div>
+
             </div>
           </div>
 

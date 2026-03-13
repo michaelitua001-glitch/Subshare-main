@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { Menu, Infinity as InfinityIcon } from 'lucide-react';
+import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { Menu, Infinity as InfinityIcon, Loader2 } from 'lucide-react';
 import { ToastProvider } from './context/ToastContext';
-import { UserProvider } from './context/UserContext'; // Import UserProvider
+import { UserProvider, useUser } from './context/UserContext'; // Import UserProvider
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Marketplace from './pages/Marketplace';
@@ -18,6 +18,21 @@ import Pricing from './pages/Pricing';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Support from './pages/Support';
+
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { session, isLoading } = useUser();
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-[#131022]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  if (!session) {
+    return <Navigate to="/auth" replace />;
+  }
+  return <>{children}</>;
+};
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
@@ -96,12 +111,12 @@ const App: React.FC = () => {
               <Route path="/support" element={<Support />} />
               
               {/* Protected Routes */}
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/marketplace" element={<Marketplace />} />
-              <Route path="/product/:id" element={<ProductDetails />} />
-              <Route path="/wallet" element={<Wallet />} />
-              <Route path="/chat" element={<Chat />} />
-              <Route path="/settings" element={<Settings />} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+              <Route path="/product/:id" element={<ProtectedRoute><ProductDetails /></ProtectedRoute>} />
+              <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
+              <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             </Routes>
           </Layout>
         </UserProvider>

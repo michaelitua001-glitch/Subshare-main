@@ -10,7 +10,9 @@ import {
   DollarSign, 
   Play,
   Menu,
-  X
+  X,
+  CheckCircle2,
+  Music
 } from 'lucide-react';
 
 const HowItWorks: React.FC = () => {
@@ -77,35 +79,149 @@ const HowItWorks: React.FC = () => {
         <h1 className="text-4xl md:text-6xl font-bold mb-6 relative z-10">Simple, Secure, Shared.</h1>
         <p className="text-gray-400 max-w-2xl mx-auto text-lg relative z-10 mb-16">We handle the coordination, payments, and security so you can focus on enjoying your favorite content for less.</p>
 
-        {/* Video Section */}
-        <div className="relative z-10 max-w-5xl mx-auto mb-10">
-           <div className="aspect-video bg-[#1A1729] rounded-[2rem] border border-white/10 overflow-hidden shadow-2xl relative group cursor-pointer">
-              <img 
-                 src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-1.2.1&auto=format&fit=crop&w=1600&q=80" 
-                 alt="Team working" 
-                 className="w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0B0A15] via-transparent to-transparent opacity-60"></div>
-              
-              <div className="absolute inset-0 flex items-center justify-center">
-                 <div className="w-24 h-24 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <div className="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center pl-1 shadow-[0_0_30px_rgba(71,37,244,0.5)]">
-                       <Play className="w-8 h-8 fill-current" />
+        {/* Visual Steps Section */}
+        <div className="relative z-10 max-w-6xl mx-auto mb-20 text-left">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
+            <div className="order-2 lg:order-1">
+              <h3 className="text-3xl font-bold mb-4">1. Browse the Marketplace</h3>
+              <p className="text-gray-400 text-lg mb-6">Explore hundreds of shared subscriptions across various categories like Video, Music, Gaming, and Productivity. Find the perfect plan that fits your needs and budget.</p>
+              <ul className="space-y-3 text-gray-300">
+                <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-primary" /> Verified listings only</li>
+                <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-primary" /> Transparent pricing</li>
+                <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-primary" /> Instant availability</li>
+              </ul>
+            </div>
+            <div className="order-1 lg:order-2 relative">
+              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full"></div>
+              <div className="relative bg-[#1A1729] border border-white/10 rounded-2xl p-6 shadow-2xl transform rotate-2 hover:rotate-0 transition-transform duration-500">
+                {/* Mock Marketplace UI */}
+                <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-4">
+                  <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg">
+                    <Search className="w-4 h-4 text-gray-400" />
+                    <div className="h-4 w-32 bg-white/10 rounded"></div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="h-8 w-20 bg-primary/20 rounded-full"></div>
+                    <div className="h-8 w-20 bg-white/5 rounded-full"></div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg">
+                          <Play className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <div className="h-5 w-32 bg-white/20 rounded mb-2"></div>
+                          <div className="h-3 w-20 bg-white/10 rounded"></div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-primary font-bold text-lg">$3.99<span className="text-xs text-gray-500 font-normal">/mo</span></div>
+                        <div className="text-xs text-green-400 mt-1 font-medium">2 slots left</div>
+                      </div>
                     </div>
-                 </div>
+                  ))}
+                </div>
               </div>
+            </div>
+          </div>
 
-              <div className="absolute bottom-8 left-8 text-left">
-                 <span className="px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-bold mb-2 inline-block">
-                    Watch Demo
-                 </span>
-                 <h3 className="text-2xl font-bold text-white">See how SubShare works</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
+            <div className="relative">
+              <div className="absolute inset-0 bg-purple-500/20 blur-3xl rounded-full"></div>
+              <div className="relative bg-[#1A1729] border border-white/10 rounded-2xl p-8 shadow-2xl transform -rotate-2 hover:rotate-0 transition-transform duration-500">
+                {/* Mock Checkout UI */}
+                <div className="text-center mb-8">
+                  <div className="w-20 h-20 mx-auto bg-gradient-to-br from-green-400 to-green-600 rounded-2xl mb-4 flex items-center justify-center shadow-lg shadow-green-500/20">
+                    <Music className="w-10 h-10 text-white" />
+                  </div>
+                  <h4 className="text-2xl font-bold text-white mb-1">Spotify Premium</h4>
+                  <p className="text-gray-400 text-sm">Family Plan Share</p>
+                </div>
+                <div className="bg-[#0B0A15] rounded-xl p-6 mb-6 border border-white/5">
+                  <div className="flex justify-between mb-3 text-sm">
+                    <span className="text-gray-400">Monthly Price</span>
+                    <span className="text-white font-bold">$2.50</span>
+                  </div>
+                  <div className="flex justify-between mb-6 text-sm">
+                    <span className="text-gray-400">Platform Fee</span>
+                    <span className="text-white font-bold">$0.50</span>
+                  </div>
+                  <div className="flex justify-between pt-4 border-t border-white/10">
+                    <span className="text-gray-300 font-medium">Total</span>
+                    <span className="text-primary font-bold text-xl">$3.00<span className="text-sm text-gray-500 font-normal">/mo</span></span>
+                  </div>
+                </div>
+                <div className="w-full py-3.5 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+                  <CreditCard className="w-5 h-5" /> Pay Securely
+                </div>
               </div>
-           </div>
-           
-           {/* Decorative elements behind video */}
-           <div className="absolute -top-10 -right-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl -z-10"></div>
-           <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl -z-10"></div>
+            </div>
+            <div>
+              <h3 className="text-3xl font-bold mb-4">2. Secure Payment & Escrow</h3>
+              <p className="text-gray-400 text-lg mb-6">Pay securely using your preferred payment method. We hold your funds in escrow and only release them to the seller once you confirm the subscription works perfectly.</p>
+              <ul className="space-y-3 text-gray-300">
+                <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-purple-500" /> Buyer protection guarantee</li>
+                <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-purple-500" /> Cancel anytime</li>
+                <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-purple-500" /> No hidden fees</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div className="order-2 lg:order-1">
+              <h3 className="text-3xl font-bold mb-4">3. Instant Access & Dashboard</h3>
+              <p className="text-gray-400 text-lg mb-6">Get your credentials instantly or receive an invite link directly to your email. Manage all your shared subscriptions from one centralized, easy-to-use dashboard.</p>
+              <ul className="space-y-3 text-gray-300">
+                <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-green-500" /> Auto-renewals management</li>
+                <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-green-500" /> Direct chat with sellers</li>
+                <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-green-500" /> Real-time notifications</li>
+              </ul>
+            </div>
+            <div className="order-1 lg:order-2 relative">
+              <div className="absolute inset-0 bg-green-500/20 blur-3xl rounded-full"></div>
+              <div className="relative bg-[#1A1729] border border-white/10 rounded-2xl p-6 shadow-2xl transform rotate-2 hover:rotate-0 transition-transform duration-500">
+                {/* Mock Dashboard UI */}
+                <div className="flex gap-4 mb-6">
+                  <div className="flex-1 bg-white/5 rounded-xl p-5 border border-white/5">
+                    <div className="text-gray-400 text-xs mb-2">Active Subs</div>
+                    <div className="text-3xl font-bold text-white">4</div>
+                  </div>
+                  <div className="flex-1 bg-white/5 rounded-xl p-5 border border-white/5">
+                    <div className="text-gray-400 text-xs mb-2">Monthly Savings</div>
+                    <div className="text-3xl font-bold text-green-400">$42.50</div>
+                  </div>
+                </div>
+                <div className="bg-[#0B0A15] rounded-xl p-5 border border-white/5">
+                  <div className="flex items-center justify-between mb-5">
+                    <h5 className="font-medium text-white">Your Credentials</h5>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-white/5 rounded-lg flex items-center justify-between border border-white/5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-red-500">
+                          <Play className="w-5 h-5" />
+                        </div>
+                        <span className="text-sm font-medium text-white">Netflix Premium</span>
+                      </div>
+                      <div className="px-3 py-1.5 bg-primary/20 text-primary rounded-lg text-xs font-bold">View Details</div>
+                    </div>
+                    <div className="p-3 bg-white/5 rounded-lg flex items-center justify-between border border-white/5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center text-green-500">
+                          <Music className="w-5 h-5" />
+                        </div>
+                        <span className="text-sm font-medium text-white">Spotify Family</span>
+                      </div>
+                      <div className="px-3 py-1.5 bg-primary/20 text-primary rounded-lg text-xs font-bold">View Details</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

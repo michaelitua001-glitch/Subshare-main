@@ -1,7 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
+import { Session, User } from '@supabase/supabase-js';
 
 // --- Types ---
 export interface UserProfile {
+  id?: string;
   name: string;
   email: string;
   avatar: string;
@@ -9,13 +12,13 @@ export interface UserProfile {
 }
 
 export interface Transaction {
-  id: number;
+  id: string;
   name: string;
   date: string;
   type: 'Purchase' | 'Deposit' | 'Sales' | 'Withdrawal';
   amount: number;
   status: 'Completed' | 'Pending' | 'Failed';
-  icon: string; // We will store icon name/type as string for simplicity in context
+  icon: string;
   color: string;
   bg: string;
 }
@@ -25,7 +28,7 @@ export interface Subscription {
   name: string;
   plan: string;
   price: number;
-  renewalDate: string; // String date
+  renewalDate: string;
   icon: string;
   color: string;
   bg: string;
@@ -33,14 +36,17 @@ export interface Subscription {
 
 interface UserContextType {
   user: UserProfile;
+  supabaseUser: User | null;
+  session: Session | null;
+  isLoading: boolean;
   walletBalance: number;
   transactions: Transaction[];
   activeSubscriptions: Subscription[];
-  updateProfile: (data: Partial<UserProfile>) => void;
-  addToWallet: (amount: number, description: string) => void;
-  subtractFromWallet: (amount: number, description: string, category: string) => boolean; // Returns success/fail
-  addSubscription: (sub: Subscription) => void;
-  logout: () => void;
+  updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+  addToWallet: (amount: number, description: string) => Promise<void>;
+  subtractFromWallet: (amount: number, description: string, category: string) => Promise<boolean>;
+  addSubscription: (sub: Omit<Subscription, 'id'>) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -53,78 +59,165 @@ export const useUser = () => {
   return context;
 };
 
-// Initial Mock Data (used if local storage is empty)
 const defaultUser: UserProfile = {
-  name: 'Elena R.',
-  email: 'elena@example.com',
-  avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80',
-  plan: 'Premium'
+  name: '',
+  email: '',
+  avatar: '',
+  plan: 'Free'
 };
 
-const defaultTransactions: Transaction[] = [
-  {id: 1, name: 'Netflix Premium', date: 'Oct 24, 2023', type: 'Purchase', amount: -4.99, status: 'Completed', icon: 'N', color: 'text-red-600', bg: 'bg-black'},
-  {id: 2, name: 'Funds Added', date: 'Oct 22, 2023', type: 'Deposit', amount: 200.00, status: 'Completed', icon: 'P', color: 'text-white', bg: 'bg-blue-600'},
-];
-
-const defaultSubs: Subscription[] = [
-  { id: '1', name: 'Netflix', plan: 'Premium 4K', price: 4.99, renewalDate: '2023-11-24', icon: 'N', color: 'text-red-600', bg: 'bg-black' },
-];
-
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Initialize state from localStorage or defaults
-  const [user, setUser] = useState<UserProfile>(() => {
-    const saved = localStorage.getItem('subshare_user');
-    return saved ? JSON.parse(saved) : defaultUser;
-  });
+  const [session, setSession] = useState<Session | null>(null);
+  const [supabaseUser, setSupabaseUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [walletBalance, setWalletBalance] = useState<number>(() => {
-    const saved = localStorage.getItem('subshare_balance');
-    return saved ? parseFloat(saved) : 1248.50;
-  });
+  const [user, setUser] = useState<UserProfile>(defaultUser);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [activeSubscriptions, setActiveSubscriptions] = useState<Subscription[]>([]);
 
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    const saved = localStorage.getItem('subshare_transactions');
-    return saved ? JSON.parse(saved) : defaultTransactions;
-  });
+  const fetchUserData = async (userId: string) => {
+    setIsLoading(true);
+    try {
+      // Fetch Profile
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      if (profile) {
+        setUser({
+          id: profile.id,
+          name: profile.name || '',
+          email: profile.email || '',
+          avatar: profile.avatar || '',
+          plan: profile.plan || 'Free'
+        });
+        setWalletBalance(profile.wallet_balance || 0);
+      }
 
-  const [activeSubscriptions, setActiveSubscriptions] = useState<Subscription[]>(() => {
-    const saved = localStorage.getItem('subshare_subs');
-    return saved ? JSON.parse(saved) : defaultSubs;
-  });
+      // Fetch Transactions
+      const { data: txs } = await supabase.from('transactions').select('*').eq('user_id', userId).order('date', { ascending: false });
+      if (txs) {
+        setTransactions(txs.map(tx => ({
+          id: tx.id,
+          name: tx.name,
+          date: new Date(tx.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          type: tx.type,
+          amount: tx.amount,
+          status: tx.status,
+          icon: tx.icon,
+          color: tx.color,
+          bg: tx.bg
+        })));
+      }
 
-  // Persistence Effects
-  useEffect(() => { localStorage.setItem('subshare_user', JSON.stringify(user)); }, [user]);
-  useEffect(() => { localStorage.setItem('subshare_balance', walletBalance.toString()); }, [walletBalance]);
-  useEffect(() => { localStorage.setItem('subshare_transactions', JSON.stringify(transactions)); }, [transactions]);
-  useEffect(() => { localStorage.setItem('subshare_subs', JSON.stringify(activeSubscriptions)); }, [activeSubscriptions]);
-
-  // Actions
-  const updateProfile = (data: Partial<UserProfile>) => {
-    setUser(prev => ({ ...prev, ...data }));
+      // Fetch Subscriptions
+      const { data: subs } = await supabase.from('subscriptions').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+      if (subs) {
+        setActiveSubscriptions(subs.map(sub => ({
+          id: sub.id,
+          name: sub.name,
+          plan: sub.plan,
+          price: sub.price,
+          renewalDate: sub.renewal_date,
+          icon: sub.icon,
+          color: sub.color,
+          bg: sub.bg
+        })));
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const addToWallet = (amount: number, description: string) => {
-    setWalletBalance(prev => prev + amount);
-    const newTrans: Transaction = {
-      id: Date.now(),
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setSupabaseUser(session?.user ?? null);
+      if (session?.user) {
+        fetchUserData(session.user.id);
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setSupabaseUser(session?.user ?? null);
+      if (session?.user) {
+        fetchUserData(session.user.id);
+      } else {
+        setUser(defaultUser);
+        setWalletBalance(0);
+        setTransactions([]);
+        setActiveSubscriptions([]);
+        setIsLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const updateProfile = async (data: Partial<UserProfile>) => {
+    if (!supabaseUser) return;
+    const { error } = await supabase.from('profiles').update(data).eq('id', supabaseUser.id);
+    if (!error) {
+      setUser(prev => ({ ...prev, ...data }));
+    } else {
+      console.error("Error updating profile:", error);
+    }
+  };
+
+  const addToWallet = async (amount: number, description: string) => {
+    if (!supabaseUser) return;
+    const newBalance = walletBalance + amount;
+    
+    // Update balance
+    const { error: profileError } = await supabase.from('profiles').update({ wallet_balance: newBalance }).eq('id', supabaseUser.id);
+    if (profileError) {
+      console.error("Error updating balance:", profileError);
+      return;
+    }
+    
+    // Insert transaction
+    const { data: tx, error: txError } = await supabase.from('transactions').insert({
+      user_id: supabaseUser.id,
       name: description,
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       type: 'Deposit',
       amount: amount,
       status: 'Completed',
       icon: 'P',
       color: 'text-white',
       bg: 'bg-green-600'
-    };
-    setTransactions(prev => [newTrans, ...prev]);
+    }).select().single();
+
+    if (txError) {
+      console.error("Error inserting transaction:", txError);
+      return;
+    }
+
+    if (tx) {
+      setWalletBalance(newBalance);
+      setTransactions(prev => [{
+        id: tx.id,
+        name: tx.name,
+        date: new Date(tx.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        type: tx.type,
+        amount: tx.amount,
+        status: tx.status,
+        icon: tx.icon,
+        color: tx.color,
+        bg: tx.bg
+      }, ...prev]);
+    }
   };
 
-  const subtractFromWallet = (amount: number, description: string, category: string): boolean => {
-    if (walletBalance < amount) return false;
-
-    setWalletBalance(prev => prev - amount);
+  const subtractFromWallet = async (amount: number, description: string, category: string): Promise<boolean> => {
+    if (!supabaseUser || walletBalance < amount) return false;
     
-    // Determine visuals based on category/description
+    const newBalance = walletBalance - amount;
+    
     let icon = 'S';
     let bg = 'bg-gray-800';
     let color = 'text-white';
@@ -134,34 +227,91 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (description.includes('Adobe')) { icon = 'A'; bg = 'bg-[#ff0000]'; color = 'text-white'; }
     if (category === 'Withdrawal') { icon = 'W'; bg = 'bg-gray-700'; }
 
-    const newTrans: Transaction = {
-      id: Date.now(),
+    // Update balance
+    const { error: profileError } = await supabase.from('profiles').update({ wallet_balance: newBalance }).eq('id', supabaseUser.id);
+    if (profileError) {
+      console.error("Error updating balance:", profileError);
+      return false;
+    }
+    
+    // Insert transaction
+    const { data: tx, error: txError } = await supabase.from('transactions').insert({
+      user_id: supabaseUser.id,
       name: description,
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      type: category as any,
+      type: category,
       amount: -amount,
       status: 'Completed',
       icon,
       color,
       bg
-    };
-    setTransactions(prev => [newTrans, ...prev]);
-    return true;
+    }).select().single();
+
+    if (txError) {
+      console.error("Error inserting transaction:", txError);
+      return false;
+    }
+
+    if (tx) {
+      setWalletBalance(newBalance);
+      setTransactions(prev => [{
+        id: tx.id,
+        name: tx.name,
+        date: new Date(tx.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        type: tx.type,
+        amount: tx.amount,
+        status: tx.status,
+        icon: tx.icon,
+        color: tx.color,
+        bg: tx.bg
+      }, ...prev]);
+      return true;
+    }
+    return false;
   };
 
-  const addSubscription = (sub: Subscription) => {
-    setActiveSubscriptions(prev => [sub, ...prev]);
+  const addSubscription = async (sub: Omit<Subscription, 'id'>) => {
+    if (!supabaseUser) return;
+    
+    const { data: newSub, error } = await supabase.from('subscriptions').insert({
+      user_id: supabaseUser.id,
+      name: sub.name,
+      plan: sub.plan,
+      price: sub.price,
+      renewal_date: sub.renewalDate,
+      icon: sub.icon,
+      color: sub.color,
+      bg: sub.bg
+    }).select().single();
+
+    if (error) {
+      console.error("Error adding subscription:", error);
+      return;
+    }
+
+    if (newSub) {
+      setActiveSubscriptions(prev => [{
+        id: newSub.id,
+        name: newSub.name,
+        plan: newSub.plan,
+        price: newSub.price,
+        renewalDate: newSub.renewal_date,
+        icon: newSub.icon,
+        color: newSub.color,
+        bg: newSub.bg
+      }, ...prev]);
+    }
   };
 
-  const logout = () => {
-    // Optional: Clear storage on logout? Or just navigate away.
-    // localStorage.clear(); 
-    // For this demo, we'll keeps data but could reset state if needed
+  const logout = async () => {
+    await supabase.auth.signOut();
   };
 
   return (
     <UserContext.Provider value={{
       user,
+      supabaseUser,
+      session,
+      isLoading,
       walletBalance,
       transactions,
       activeSubscriptions,

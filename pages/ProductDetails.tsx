@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ShieldCheck, 
@@ -11,10 +11,12 @@ import {
   CreditCard,
   X,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useUser } from '../context/UserContext';
+import { supabase } from '../supabaseClient';
 
 const ProductDetails: React.FC = () => {
   const { id } = useParams();
@@ -23,36 +25,78 @@ const ProductDetails: React.FC = () => {
   const { walletBalance, subtractFromWallet, addSubscription } = useUser();
   const [showModal, setShowModal] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [product, setProduct] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock product details (in a real app, fetch by ID)
-  const productPrice = 4.99;
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (!id) return;
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      if (error) {
+        console.error("Error fetching product:", error);
+        addToast("Failed to load product details", "error");
+      } else if (data) {
+        setProduct(data);
+      }
+      setIsLoading(false);
+    };
+
+    fetchProduct();
+  }, [id, addToast]);
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50 dark:bg-[#0B0A15]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-[#0B0A15]">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Product Not Found</h2>
+        <button onClick={() => navigate('/marketplace')} className="text-primary hover:underline">Return to Marketplace</button>
+      </div>
+    );
+  }
+
+  const productPrice = product.price || 0;
   const serviceFee = 0.50;
   const totalPrice = productPrice + serviceFee;
 
-  const handlePurchase = () => {
+  const handlePurchase = async () => {
     // 1. Check Balance
     if (walletBalance < totalPrice) {
       addToast('Insufficient wallet balance. Please top up.', 'error');
       return;
     }
 
+    setIsProcessing(true);
+
     // 2. Process Transaction
-    const success = subtractFromWallet(totalPrice, 'Netflix Premium Purchase', 'Purchase');
+    const success = await subtractFromWallet(totalPrice, `${product.name} Purchase`, 'Purchase');
     
     if (success) {
       // 3. Add to Subscriptions
       const nextMonth = new Date();
       nextMonth.setMonth(nextMonth.getMonth() + 1);
 
-      addSubscription({
-        id: Date.now().toString(),
-        name: 'Netflix',
-        plan: 'Premium 4K',
+      await addSubscription({
+        name: product.name,
+        plan: product.plan || 'Standard',
         price: productPrice,
         renewalDate: nextMonth.toISOString(),
-        icon: 'N',
-        color: 'text-red-600',
-        bg: 'bg-black'
+        icon: product.icon || product.name.charAt(0),
+        color: product.color || 'text-primary',
+        bg: product.bg || 'bg-gray-100'
       });
 
       setShowModal(false);
@@ -61,6 +105,7 @@ const ProductDetails: React.FC = () => {
     } else {
        addToast('Transaction failed.', 'error');
     }
+    setIsProcessing(false);
   };
 
   if (showSuccess) {
@@ -81,10 +126,12 @@ const ProductDetails: React.FC = () => {
             <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-6 mb-8 text-left">
               <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-200 dark:border-white/10">
                 <div className="flex items-center gap-3">
-                   <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center text-red-600 font-bold text-sm">N</div>
+                   <div className={`w-10 h-10 rounded-lg ${product.bg || 'bg-gray-100'} flex items-center justify-center ${product.color || 'text-gray-900'} font-bold text-sm`}>
+                     {product.icon || product.name.charAt(0)}
+                   </div>
                    <div>
-                     <p className="text-gray-900 dark:text-white font-bold">Netflix Premium</p>
-                     <p className="text-xs text-gray-500 dark:text-gray-400">4K UHD</p>
+                     <p className="text-gray-900 dark:text-white font-bold">{product.name}</p>
+                     <p className="text-xs text-gray-500 dark:text-gray-400">{product.plan || 'Standard'}</p>
                    </div>
                 </div>
                 <span className="text-xl font-bold text-primary">${productPrice}</span>
@@ -92,7 +139,7 @@ const ProductDetails: React.FC = () => {
               <div className="grid grid-cols-2 gap-4 text-sm">
                  <div>
                    <p className="text-gray-500 text-xs">Seller</p>
-                   <p className="text-gray-900 dark:text-gray-200">StreamMaster</p>
+                   <p className="text-gray-900 dark:text-gray-200">{product.seller_name || 'Anonymous'}</p>
                  </div>
                  <div className="text-right">
                    <p className="text-gray-500 text-xs">Date</p>
@@ -120,9 +167,9 @@ const ProductDetails: React.FC = () => {
       <div className="max-w-5xl mx-auto mb-6 flex items-center gap-2 text-sm text-gray-400 dark:text-slate-400">
         <span className="cursor-pointer hover:text-gray-900 dark:hover:text-white transition-colors" onClick={() => navigate('/marketplace')}>Marketplace</span>
         <ChevronRight className="w-3 h-3" />
-        <span className="cursor-pointer hover:text-gray-900 dark:hover:text-white transition-colors">Video</span>
+        <span className="cursor-pointer hover:text-gray-900 dark:hover:text-white transition-colors">{product.category || 'Category'}</span>
         <ChevronRight className="w-3 h-3" />
-        <span className="text-gray-900 dark:text-white">Netflix</span>
+        <span className="text-gray-900 dark:text-white">{product.name}</span>
       </div>
 
       <div className="bg-white dark:bg-[#1A1729] dark:glass-panel max-w-5xl mx-auto rounded-2xl p-6 md:p-10 relative overflow-hidden border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none transition-colors">
@@ -132,14 +179,14 @@ const ProductDetails: React.FC = () => {
           <div className="lg:col-span-5 space-y-6">
             <div className="aspect-[4/3] rounded-xl overflow-hidden bg-black relative group shadow-2xl">
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10"></div>
-              <div className="w-full h-full flex items-center justify-center bg-black">
-                <span className="text-red-600 font-extrabold text-9xl tracking-tighter">N</span>
+              <div className={`w-full h-full flex items-center justify-center ${product.bg || 'bg-black'}`}>
+                <span className={`${product.color || 'text-white'} font-extrabold text-9xl tracking-tighter`}>{product.icon || product.name.charAt(0)}</span>
               </div>
               <div className="absolute top-4 left-4 z-20 bg-green-500/20 backdrop-blur-md border border-green-500/30 text-green-400 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5">
                 <ShieldCheck className="w-3 h-3" /> VERIFIED
               </div>
               <div className="absolute bottom-4 left-4 z-20">
-                <h3 className="text-white text-2xl font-bold">Netflix Premium</h3>
+                <h3 className="text-white text-2xl font-bold">{product.name}</h3>
                 <div className="flex items-center gap-1 mt-1 text-yellow-400">
                   <Star className="w-4 h-4 fill-current" />
                   <Star className="w-4 h-4 fill-current" />
@@ -153,10 +200,12 @@ const ProductDetails: React.FC = () => {
 
             <div className="bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 rounded-xl p-4 flex items-center justify-between">
                <div className="flex items-center gap-3">
-                 <img className="w-10 h-10 rounded-full" src="https://picsum.photos/seed/seller/50/50" alt="Seller" />
+                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                   {product.seller_name ? product.seller_name.substring(0, 2).toUpperCase() : 'AN'}
+                 </div>
                  <div>
                    <p className="text-xs text-gray-500 dark:text-slate-400">Sold by</p>
-                   <p className="font-bold text-gray-900 dark:text-white text-sm">StreamMaster_99</p>
+                   <p className="font-bold text-gray-900 dark:text-white text-sm">{product.seller_name || 'Anonymous'}</p>
                  </div>
                </div>
                <div className="text-right">
@@ -170,7 +219,7 @@ const ProductDetails: React.FC = () => {
           <div className="lg:col-span-7 flex flex-col">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 gap-4">
               <div>
-                 <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">Private UHD Slot</h1>
+                 <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">{product.plan || 'Standard Plan'}</h1>
                  <p className="text-gray-500 dark:text-slate-400 font-medium">Monthly Subscription • Auto-renewal available</p>
               </div>
               <div className="bg-primary/10 dark:bg-primary/20 p-2 rounded-lg border border-primary/20 dark:border-primary/30 self-start">
@@ -218,7 +267,7 @@ const ProductDetails: React.FC = () => {
                  </div>
                  <div className="text-right">
                    <p className="text-emerald-600 dark:text-emerald-400 text-sm font-medium mb-1">Save 75%</p>
-                   <p className="text-gray-400 dark:text-slate-500 text-xs line-through">$19.99</p>
+                   <p className="text-gray-400 dark:text-slate-500 text-xs line-through">${(productPrice * 4).toFixed(2)}</p>
                  </div>
                </div>
 
@@ -236,13 +285,13 @@ const ProductDetails: React.FC = () => {
       {/* Purchase Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !isProcessing && setShowModal(false)}></div>
           <div className="relative w-full max-w-md bg-white dark:bg-[#1A1729] dark:glass-panel rounded-2xl shadow-2xl animate-[fadeIn_0.3s] border border-gray-200 dark:border-white/10">
              <div className="p-6 border-b border-gray-200 dark:border-white/10 flex justify-between items-center">
                <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
                  <ShieldCheck className="text-primary w-6 h-6" /> Secure Checkout
                </h2>
-               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white">
+               <button onClick={() => !isProcessing && setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white">
                  <X className="w-5 h-5" />
                </button>
              </div>
@@ -281,9 +330,10 @@ const ProductDetails: React.FC = () => {
 
                <button 
                  onClick={handlePurchase}
-                 className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-xl transition-all shadow-[0_0_15px_rgba(71,37,244,0.4)]"
+                 disabled={isProcessing}
+                 className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-xl transition-all shadow-[0_0_15px_rgba(71,37,244,0.4)] flex items-center justify-center gap-2 disabled:opacity-50"
                >
-                 Confirm Purchase
+                 {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm Purchase'}
                </button>
              </div>
           </div>

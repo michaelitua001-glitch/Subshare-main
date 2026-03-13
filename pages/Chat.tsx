@@ -14,14 +14,17 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+import { useUser } from '../context/UserContext';
+import { supabase } from '../supabaseClient';
 
 // --- Types ---
 interface Message {
   id: string;
+  thread_id: string;
   text: string;
-  sender: 'me' | 'other';
-  senderName?: string; // For groups
-  time: string;
+  sender_id: string;
+  senderName?: string;
+  created_at: string;
   type: 'text' | 'image' | 'system';
   status: 'sent' | 'delivered' | 'read';
 }
@@ -29,113 +32,30 @@ interface Message {
 interface Thread {
   id: string;
   name: string;
-  lastMsg: string;
-  time: string;
+  last_msg: string;
+  updated_at: string;
   unread: number;
-  avatar: string; // Initials or Image URL
-  avatarColor?: string; // Tailwind color class
-  isOnline: boolean;
+  avatar: string;
+  avatar_color?: string;
+  is_online: boolean;
   type: 'group' | 'direct';
   verified?: boolean;
 }
 
-// --- Mock Data ---
-const initialThreads: Thread[] = [
-  { 
-    id: '1', 
-    name: 'Netflix 4K Share Group', 
-    lastMsg: 'Credentials sent! Check pinned.', 
-    time: '10:05 AM', 
-    unread: 1, 
-    avatar: 'N', 
-    avatarColor: 'bg-red-600', 
-    isOnline: true, 
-    type: 'group',
-    verified: true
-  },
-  { 
-    id: '2', 
-    name: 'Spotify Family', 
-    lastMsg: 'Please send the invite link again', 
-    time: 'Yesterday', 
-    unread: 2, 
-    avatar: 'S', 
-    avatarColor: 'bg-[#1db954]', 
-    isOnline: false, 
-    type: 'group' 
-  },
-  { 
-    id: '3', 
-    name: 'Mark Johnson', 
-    lastMsg: 'Thanks for the quick payment!', 
-    time: 'Tue', 
-    unread: 0, 
-    avatar: 'M', 
-    avatarColor: 'bg-blue-500', 
-    isOnline: true, 
-    type: 'direct' 
-  },
-  { 
-    id: '4', 
-    name: 'Adobe Creative Cloud', 
-    lastMsg: 'Subscription renewing in 3 days', 
-    time: 'Mon', 
-    unread: 0, 
-    avatar: 'A', 
-    avatarColor: 'bg-[#ff0000]', 
-    isOnline: false, 
-    type: 'group' 
-  },
-  { 
-    id: '5', 
-    name: 'Sarah Chen', 
-    lastMsg: 'Do you have a slot for Hulu?', 
-    time: 'Last Week', 
-    unread: 0, 
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80', 
-    isOnline: false, 
-    type: 'direct' 
-  },
-];
-
-const initialMessages: Record<string, Message[]> = {
-  '1': [
-    { id: '101', text: 'Welcome to the group everyone!', sender: 'other', senderName: 'Admin', time: '09:55 AM', type: 'text', status: 'read' },
-    { id: '102', text: 'I just sent the payment for this month.', sender: 'me', time: '10:00 AM', type: 'text', status: 'read' },
-    { id: '103', text: 'Payment received. Thanks!', sender: 'other', senderName: 'Admin', time: '10:02 AM', type: 'text', status: 'read' },
-    { id: '104', text: 'Credentials sent! Check pinned.', sender: 'other', senderName: 'Admin', time: '10:05 AM', type: 'text', status: 'read' },
-  ],
-  '2': [
-    { id: '201', text: 'Hey, I joined the plan but got kicked out?', sender: 'me', time: 'Yesterday', type: 'text', status: 'read' },
-    { id: '202', text: 'Oh sorry, let me check the settings.', sender: 'other', senderName: 'Host', time: 'Yesterday', type: 'text', status: 'read' },
-    { id: '203', text: 'Please send the invite link again', sender: 'other', senderName: 'Host', time: 'Yesterday', type: 'text', status: 'read' },
-  ],
-  '3': [
-    { id: '301', text: 'Hi Mark, interested in your HBO slot.', sender: 'me', time: 'Tue', type: 'text', status: 'read' },
-    { id: '302', text: 'Sure! It is still available.', sender: 'other', time: 'Tue', type: 'text', status: 'read' },
-    { id: '303', text: 'Sent. Let me know when you get it.', sender: 'me', time: 'Tue', type: 'text', status: 'read' },
-    { id: '304', text: 'Thanks for the quick payment!', sender: 'other', time: 'Tue', type: 'text', status: 'read' },
-  ],
-  '4': [
-    { id: '401', text: 'System: Subscription renewing in 3 days. Please ensure your wallet has funds.', sender: 'other', senderName: 'System', time: 'Mon', type: 'system', status: 'read' }
-  ],
-  '5': [
-    { id: '501', text: 'Do you have a slot for Hulu?', sender: 'other', time: 'Last Week', type: 'text', status: 'read' }
-  ]
-};
-
 const Chat: React.FC = () => {
   const { addToast } = useToast();
+  const { supabaseUser } = useUser();
   
   // UI State
-  const [activeThreadId, setActiveThreadId] = useState<string | null>('1'); // Default to first thread on desktop
-  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list'); // 'list' or 'chat'
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [msgText, setMsgText] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   
   // Data State
-  const [threads, setThreads] = useState<Thread[]>(initialThreads);
-  const [messages, setMessages] = useState<Record<string, Message[]>>(initialMessages);
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [messages, setMessages] = useState<Record<string, Message[]>>({});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -149,9 +69,106 @@ const Chat: React.FC = () => {
     scrollToBottom();
   }, [messages, activeThreadId]);
 
+  // Fetch Threads
+  useEffect(() => {
+    const fetchThreads = async () => {
+      if (!supabaseUser) return;
+      
+      const { data, error } = await supabase
+        .from('chat_threads')
+        .select('*')
+        .order('updated_at', { ascending: false });
+        
+      if (error) {
+        console.error("Error fetching threads:", error);
+        // Fallback or handle error
+      } else if (data) {
+        setThreads(data);
+        if (data.length > 0 && !activeThreadId) {
+          setActiveThreadId(data[0].id);
+        }
+      }
+      setIsLoading(false);
+    };
+
+    fetchThreads();
+  }, [supabaseUser]);
+
+  // Fetch Messages for Active Thread
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!activeThreadId || !supabaseUser) return;
+
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('thread_id', activeThreadId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error("Error fetching messages:", error);
+      } else if (data) {
+        setMessages(prev => ({
+          ...prev,
+          [activeThreadId]: data
+        }));
+      }
+    };
+
+    fetchMessages();
+  }, [activeThreadId, supabaseUser]);
+
+  // Subscribe to Realtime Messages
+  useEffect(() => {
+    if (!supabaseUser) return;
+
+    const channel = supabase
+      .channel('public:chat_messages')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'chat_messages' },
+        (payload) => {
+          const newMessage = payload.new as Message;
+          
+          // Update messages state
+          setMessages(prev => {
+            const threadMsgs = prev[newMessage.thread_id] || [];
+            // Prevent duplicates if we just sent it
+            if (threadMsgs.find(m => m.id === newMessage.id)) return prev;
+            
+            return {
+              ...prev,
+              [newMessage.thread_id]: [...threadMsgs, newMessage]
+            };
+          });
+
+          // Update thread preview
+          setThreads(prev => {
+            const updatedThreads = prev.map(t => 
+              t.id === newMessage.thread_id 
+                ? { 
+                    ...t, 
+                    last_msg: newMessage.sender_id === supabaseUser.id ? 'You: ' + newMessage.text : newMessage.text, 
+                    updated_at: newMessage.created_at,
+                    unread: newMessage.sender_id !== supabaseUser.id && activeThreadId !== newMessage.thread_id ? t.unread + 1 : t.unread
+                  } 
+                : t
+            );
+            // Sort: active thread goes to top
+            return updatedThreads.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabaseUser, activeThreadId]);
+
   // Derived state
   const activeThread = threads.find(t => t.id === activeThreadId);
-  const activeMessages = activeThreadId ? messages[activeThreadId] : [];
+  const activeMessages = activeThreadId ? messages[activeThreadId] || [] : [];
   
   const filteredThreads = threads.filter(t => 
     t.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -162,7 +179,7 @@ const Chat: React.FC = () => {
     setActiveThreadId(id);
     setMobileView('chat');
     
-    // Mark as read
+    // Mark as read locally (ideally update in DB too)
     setThreads(prev => prev.map(t => 
       t.id === id ? { ...t, unread: 0 } : t
     ));
@@ -179,51 +196,66 @@ const Chat: React.FC = () => {
     setMobileView('list');
   };
 
-  const handleSendMessage = () => {
-    if (!msgText.trim() || !activeThreadId) return;
+  const handleSendMessage = async () => {
+    if (!msgText.trim() || !activeThreadId || !supabaseUser) return;
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text: msgText,
-      sender: 'me',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    const textToSend = msgText;
+    setMsgText(''); // Clear input immediately for better UX
+
+    // Optimistic UI update
+    const tempId = Date.now().toString();
+    const optimisticMessage: Message = {
+      id: tempId,
+      thread_id: activeThreadId,
+      text: textToSend,
+      sender_id: supabaseUser.id,
+      created_at: new Date().toISOString(),
       type: 'text',
       status: 'sent'
     };
 
-    // 1. Add message to history
     setMessages(prev => ({
       ...prev,
-      [activeThreadId]: [...(prev[activeThreadId] || []), newMessage]
+      [activeThreadId]: [...(prev[activeThreadId] || []), optimisticMessage]
     }));
 
-    // 2. Update thread preview and move to top
-    setThreads(prev => {
-      const updatedThreads = prev.map(t => 
-        t.id === activeThreadId 
-          ? { ...t, lastMsg: 'You: ' + msgText, time: 'Just now' } 
-          : t
-      );
-      // Sort: active thread goes to top
-      return [
-        updatedThreads.find(t => t.id === activeThreadId)!,
-        ...updatedThreads.filter(t => t.id !== activeThreadId)
-      ];
-    });
+    // Insert into Supabase
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .insert({
+        thread_id: activeThreadId,
+        sender_id: supabaseUser.id,
+        text: textToSend,
+        type: 'text',
+        status: 'sent'
+      })
+      .select()
+      .single();
 
-    setMsgText('');
-    
-    // Simulate "Delivered" status after 1s
-    setTimeout(() => {
-        setMessages(prev => {
-            const threadMsgs = prev[activeThreadId];
-            if (!threadMsgs) return prev;
-            const updatedMsgs = threadMsgs.map(m => 
-                m.id === newMessage.id ? { ...m, status: 'delivered' as const } : m
-            );
-            return { ...prev, [activeThreadId]: updatedMsgs };
-        });
-    }, 1000);
+    if (error) {
+      console.error("Error sending message:", error);
+      addToast("Failed to send message", "error");
+      // Remove optimistic message on failure
+      setMessages(prev => ({
+        ...prev,
+        [activeThreadId]: prev[activeThreadId].filter(m => m.id !== tempId)
+      }));
+    } else if (data) {
+      // Replace optimistic message with real one from DB
+      setMessages(prev => ({
+        ...prev,
+        [activeThreadId]: prev[activeThreadId].map(m => m.id === tempId ? data : m)
+      }));
+
+      // Update thread last_msg in DB
+      await supabase
+        .from('chat_threads')
+        .update({ 
+          last_msg: 'You: ' + textToSend,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', activeThreadId);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -235,6 +267,12 @@ const Chat: React.FC = () => {
 
   const handleFeatureNotReady = () => {
     addToast('This feature is coming soon!', 'info');
+  };
+
+  // Format time helper
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
@@ -271,7 +309,11 @@ const Chat: React.FC = () => {
         
         {/* Thread List */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          {filteredThreads.map((thread) => (
+          {isLoading ? (
+            <div className="flex justify-center p-8">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : filteredThreads.map((thread) => (
              <div 
                key={thread.id} 
                onClick={() => handleThreadClick(thread.id)}
@@ -284,15 +326,15 @@ const Chat: React.FC = () => {
                 <div className="flex items-center gap-3">
                    {/* Avatar */}
                    <div className="relative shrink-0">
-                      {thread.avatar.startsWith('http') ? (
+                      {thread.avatar && thread.avatar.startsWith('http') ? (
                          <img src={thread.avatar} alt={thread.name} className="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-white/10" />
                       ) : (
-                         <div className={`w-12 h-12 rounded-full ${thread.avatarColor || 'bg-gray-500'} flex items-center justify-center font-bold text-white text-lg shadow-sm border border-white/10`}>
-                            {thread.avatar}
+                         <div className={`w-12 h-12 rounded-full ${thread.avatar_color || 'bg-gray-500'} flex items-center justify-center font-bold text-white text-lg shadow-sm border border-white/10`}>
+                            {thread.avatar || thread.name.charAt(0)}
                          </div>
                       )}
                       
-                      {thread.isOnline && (
+                      {thread.is_online && (
                         <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-[#1A1729] rounded-full"></span>
                       )}
                    </div>
@@ -304,13 +346,13 @@ const Chat: React.FC = () => {
                            {thread.name}
                          </h3>
                          <span className={`text-xs whitespace-nowrap ${thread.unread > 0 ? 'text-primary font-bold' : 'text-gray-400 dark:text-white/40'}`}>
-                           {thread.time}
+                           {formatTime(thread.updated_at)}
                          </span>
                       </div>
                       <div className="flex justify-between items-center gap-2">
                          <p className={`text-sm truncate ${thread.unread > 0 ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-500 dark:text-white/50'}`}>
-                            {thread.lastMsg.startsWith('You:') ? <span className="text-gray-400">You: </span> : ''}
-                            {thread.lastMsg.replace('You: ', '')}
+                            {thread.last_msg?.startsWith('You:') ? <span className="text-gray-400">You: </span> : ''}
+                            {thread.last_msg?.replace('You: ', '') || 'No messages yet'}
                          </p>
                          {thread.unread > 0 && (
                            <span className="min-w-[1.25rem] h-5 flex items-center justify-center bg-primary rounded-full text-[10px] font-bold text-white px-1 shadow-sm shadow-primary/30">
@@ -323,7 +365,7 @@ const Chat: React.FC = () => {
              </div>
           ))}
 
-          {filteredThreads.length === 0 && (
+          {!isLoading && filteredThreads.length === 0 && (
             <div className="text-center py-10 text-gray-400">
                <p>No conversations found.</p>
             </div>
@@ -355,11 +397,11 @@ const Chat: React.FC = () => {
 
                   {/* Header Avatar */}
                   <div className="relative">
-                    {activeThread.avatar.startsWith('http') ? (
+                    {activeThread.avatar && activeThread.avatar.startsWith('http') ? (
                        <img src={activeThread.avatar} alt={activeThread.name} className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover" />
                     ) : (
-                       <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full ${activeThread.avatarColor} flex items-center justify-center text-white font-bold text-lg`}>
-                          {activeThread.avatar}
+                       <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full ${activeThread.avatar_color || 'bg-gray-500'} flex items-center justify-center text-white font-bold text-lg`}>
+                          {activeThread.avatar || activeThread.name.charAt(0)}
                        </div>
                     )}
                     {activeThread.verified && (
@@ -375,7 +417,7 @@ const Chat: React.FC = () => {
                        {activeThread.name}
                      </h1>
                      <div className="flex items-center gap-1.5">
-                        {activeThread.isOnline ? (
+                        {activeThread.is_online ? (
                           <>
                              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                              <span className="text-xs text-green-600 dark:text-green-400 font-medium">Online</span>
@@ -405,8 +447,8 @@ const Chat: React.FC = () => {
                </div>
                
                {activeMessages.length > 0 ? (
-                 activeMessages.map((msg, index) => {
-                   const isMe = msg.sender === 'me';
+                 activeMessages.map((msg) => {
+                   const isMe = msg.sender_id === supabaseUser?.id;
                    const isSystem = msg.type === 'system';
 
                    if (isSystem) {
@@ -423,11 +465,11 @@ const Chat: React.FC = () => {
                      <div key={msg.id} className={`flex items-end gap-2 md:gap-3 max-w-[85%] md:max-w-[70%] group ${isMe ? 'self-end flex-row-reverse ml-auto' : ''}`}>
                         {/* Avatar (only for other) */}
                         {!isMe && (
-                           activeThread.avatar.startsWith('http') ? (
-                              <img src={activeThread.avatar} className="w-6 h-6 md:w-8 md:h-8 rounded-full object-cover shadow-sm mb-1" alt={msg.senderName} />
+                           activeThread.avatar && activeThread.avatar.startsWith('http') ? (
+                              <img src={activeThread.avatar} className="w-6 h-6 md:w-8 md:h-8 rounded-full object-cover shadow-sm mb-1" alt={msg.senderName || 'User'} />
                            ) : (
-                              <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full ${activeThread.avatarColor} flex items-center justify-center text-[10px] font-bold text-white shadow-sm mb-1`}>
-                                 {activeThread.avatar}
+                              <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full ${activeThread.avatar_color || 'bg-gray-500'} flex items-center justify-center text-[10px] font-bold text-white shadow-sm mb-1`}>
+                                 {activeThread.avatar || activeThread.name.charAt(0)}
                               </div>
                            )
                         )}
@@ -456,7 +498,7 @@ const Chat: React.FC = () => {
 
                            {/* Metadata */}
                            <div className={`text-[10px] mt-1 text-right flex items-center justify-end gap-1 ${isMe ? 'text-white/70' : 'text-gray-400'}`}>
-                             {msg.time}
+                             {formatTime(msg.created_at)}
                              {isMe && (
                                msg.status === 'read' ? <CheckCheck className="w-3 h-3" /> : <Check className="w-3 h-3" />
                              )}

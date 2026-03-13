@@ -32,10 +32,7 @@ interface PaymentCard {
   color: string; // Gradient class
 }
 
-const initialCards: PaymentCard[] = [
-  { id: '1', type: 'Visa', last4: '4289', expiry: '09/25', holder: 'ELENA R.', color: 'bg-gradient-to-br from-gray-800 to-gray-900 dark:from-[#3e3b4e] dark:to-[#25232d]' },
-  { id: '2', type: 'Visa', last4: '8842', expiry: '12/24', holder: 'ELENA R.', color: 'bg-gradient-to-br from-blue-600 to-blue-800' }
-];
+const initialCards: PaymentCard[] = [];
 
 const Wallet: React.FC = () => {
   const { addToast } = useToast();
@@ -108,35 +105,34 @@ const Wallet: React.FC = () => {
     }
   };
 
-  const handleTransaction = () => {
+  const handleTransaction = async () => {
+    if (!amount || isNaN(parseFloat(amount))) return;
     setIsProcessing(true);
     
-    setTimeout(() => {
-      const val = parseFloat(amount);
+    const val = parseFloat(amount);
+    
+    if (modalMode === 'deposit') {
+      await addToWallet(val, 'Funds Added');
+      addToast(`Successfully deposited $${val.toFixed(2)}`, 'success');
+    } else {
+      // For withdrawals, we deduct the requested amount. The fee is taken from the payout, not the wallet balance.
+      // E.g. Withdraw $100. Wallet -100. User receives $98.50.
+      const destination = paymentMethod === 'card' 
+        ? `Card ending in ${cards[0]?.last4 || 'xxxx'}` 
+        : 'PayPal';
       
-      if (modalMode === 'deposit') {
-        addToWallet(val, 'Funds Added');
-        addToast(`Successfully deposited $${val.toFixed(2)}`, 'success');
+      const success = await subtractFromWallet(val, `Withdrawal to ${destination}`, 'Withdrawal');
+      
+      if (success) {
+         addToast(`Successfully withdrew $${val.toFixed(2)}`, 'success');
       } else {
-        // For withdrawals, we deduct the requested amount. The fee is taken from the payout, not the wallet balance.
-        // E.g. Withdraw $100. Wallet -100. User receives $98.50.
-        const destination = paymentMethod === 'card' 
-          ? `Card ending in ${cards[0]?.last4 || 'xxxx'}` 
-          : 'PayPal';
-        
-        const success = subtractFromWallet(val, `Withdrawal to ${destination}`, 'Withdrawal');
-        
-        if (success) {
-           addToast(`Successfully withdrew $${val.toFixed(2)}`, 'success');
-        } else {
-           addToast("Insufficient funds!", 'error');
-        }
+         addToast("Insufficient funds!", 'error');
       }
-      setIsProcessing(false);
-      setShowTransModal(false);
-      setAmount('');
-      setStep(1);
-    }, 1500);
+    }
+    setIsProcessing(false);
+    setShowTransModal(false);
+    setAmount('');
+    setStep(1);
   };
 
   const handleAddCard = (e: React.FormEvent) => {

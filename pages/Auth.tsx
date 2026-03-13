@@ -1,20 +1,52 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Infinity as InfinityIcon, Mail, Lock, User, ArrowRight, Loader2, ArrowLeft } from 'lucide-react';
+import { supabase } from '../supabaseClient';
+import { useToast } from '../context/ToastContext';
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    
+    try {
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        addToast('Successfully logged in!', 'success');
+        navigate('/dashboard');
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: name,
+            }
+          }
+        });
+        if (error) throw error;
+        addToast('Registration successful! Please check your email to verify your account.', 'success');
+        if (!error) {
+          setIsLogin(true);
+        }
+      }
+    } catch (error: any) {
+      addToast(error.message || 'An error occurred during authentication.', 'error');
+    } finally {
       setLoading(false);
-      navigate('/dashboard');
-    }, 1500);
+    }
   };
 
   return (
@@ -84,6 +116,8 @@ const Auth: React.FC = () => {
                      <input 
                        type="text" 
                        required 
+                       value={name}
+                       onChange={(e) => setName(e.target.value)}
                        placeholder="Elena R." 
                        className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-3 pl-12 pr-4 text-gray-900 dark:text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:font-normal"
                      />
@@ -98,6 +132,8 @@ const Auth: React.FC = () => {
                    <input 
                      type="email" 
                      required 
+                     value={email}
+                     onChange={(e) => setEmail(e.target.value)}
                      placeholder="name@example.com" 
                      className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-3 pl-12 pr-4 text-gray-900 dark:text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:font-normal"
                    />
@@ -114,6 +150,8 @@ const Auth: React.FC = () => {
                    <input 
                      type="password" 
                      required 
+                     value={password}
+                     onChange={(e) => setPassword(e.target.value)}
                      placeholder="••••••••" 
                      className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-3 pl-12 pr-4 text-gray-900 dark:text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:font-normal"
                    />

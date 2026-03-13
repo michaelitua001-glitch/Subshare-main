@@ -34,41 +34,12 @@ interface QuickUser {
 
 // --- Mock Data (Charts Only) ---
 const chartDataSets: Record<TimeRange, { name: string; value: number }[]> = {
-  '6M': [
-    { name: 'May', value: 42.5 },
-    { name: 'Jun', value: 55.0 },
-    { name: 'Jul', value: 48.0 },
-    { name: 'Aug', value: 51.5 },
-    { name: 'Sep', value: 45.0 },
-    { name: 'Oct', value: 62.5 },
-  ],
-  '1Y': [
-    { name: 'Nov', value: 35 },
-    { name: 'Dec', value: 45 },
-    { name: 'Jan', value: 20 },
-    { name: 'Feb', value: 35 },
-    { name: 'Mar', value: 28 },
-    { name: 'Apr', value: 45 },
-    { name: 'May', value: 42.5 },
-    { name: 'Jun', value: 55 },
-    { name: 'Jul', value: 48 },
-    { name: 'Aug', value: 51.5 },
-    { name: 'Sep', value: 45 },
-    { name: 'Oct', value: 62.5 },
-  ],
-  'ALL': [
-    { name: '2020', value: 25 },
-    { name: '2021', value: 35 },
-    { name: '2022', value: 45 },
-    { name: '2023', value: 62.5 },
-  ]
+  '6M': [],
+  '1Y': [],
+  'ALL': []
 };
 
-const quickUsers: QuickUser[] = [
-  { id: 'u1', name: 'Alex', avatar: 'https://picsum.photos/seed/21/50/50' },
-  { id: 'u2', name: 'Maria', avatar: 'https://picsum.photos/seed/22/50/50' },
-  { id: 'u3', name: 'Dave', avatar: 'https://picsum.photos/seed/23/50/50' }
-];
+const quickUsers: QuickUser[] = [];
 
 // --- Components ---
 
@@ -141,26 +112,24 @@ const Dashboard: React.FC = () => {
     setShowTransferModal(true);
   };
 
-  const handleTransfer = (e: React.FormEvent) => {
+  const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!transferAmount) return;
 
     setIsProcessing(true);
-    setTimeout(() => {
-      const amountVal = parseFloat(transferAmount);
-      const recipient = transferUser?.name || 'User';
-      
-      const success = subtractFromWallet(amountVal, `Transfer to ${recipient}`, 'Withdrawal');
-      
-      setIsProcessing(false);
-      setShowTransferModal(false);
+    const amountVal = parseFloat(transferAmount);
+    const recipient = transferUser?.name || 'User';
+    
+    const success = await subtractFromWallet(amountVal, `Transfer to ${recipient}`, 'Withdrawal');
+    
+    setIsProcessing(false);
+    setShowTransferModal(false);
 
-      if (success) {
-        addToast(`Successfully sent $${transferAmount} to ${recipient}`, 'success');
-      } else {
-        addToast(`Insufficient funds for transfer`, 'error');
-      }
-    }, 1500);
+    if (success) {
+      addToast(`Successfully sent $${transferAmount} to ${recipient}`, 'success');
+    } else {
+      addToast(`Insufficient funds for transfer`, 'error');
+    }
   };
 
   // Helper to render icons based on text if they are strings
@@ -262,7 +231,7 @@ const Dashboard: React.FC = () => {
           <div className="xl:col-span-3 space-y-6 md:space-y-8">
             
             {/* KPI Widgets */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
               {/* Widget 1: Monthly Spend */}
               <div className="bg-white dark:bg-[#1A1729] rounded-3xl p-6 border border-gray-200 dark:border-white/5 relative overflow-hidden group hover:border-primary/20 transition-colors shadow-sm dark:shadow-none">
                 <div className="flex justify-between items-start mb-6">
@@ -293,40 +262,44 @@ const Dashboard: React.FC = () => {
                     <Layers className="w-5 h-5" />
                   </div>
                 </div>
-                <div className="flex -space-x-3 mt-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="w-9 h-9 rounded-full border-2 border-white dark:border-[#1A1729] overflow-hidden bg-gray-200 dark:bg-white/10">
-                      <img className="w-full h-full object-cover" src={`https://picsum.photos/seed/${i + 40}/100/100`} alt="User" />
-                    </div>
-                  ))}
-                  <div className="w-9 h-9 rounded-full border-2 border-white dark:border-[#1A1729] bg-gray-100 dark:bg-white/10 text-xs flex items-center justify-center font-medium text-gray-600 dark:text-white">+2</div>
-                </div>
+
               </div>
 
               {/* Widget 3: Next Payment */}
-              <div className="bg-white dark:bg-[#1A1729] rounded-3xl p-6 border border-gray-200 dark:border-white/5 relative overflow-hidden group hover:border-red-500/20 transition-colors shadow-sm dark:shadow-none">
+              <div className="bg-white dark:bg-[#1A1729] rounded-3xl p-6 border border-gray-200 dark:border-white/5 relative overflow-hidden group hover:border-red-500/20 transition-colors shadow-sm dark:shadow-none sm:col-span-2 xl:col-span-1">
                  {/* Background blur for effect */}
                 <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-red-500/5 rounded-full blur-2xl"></div>
                 
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Next Payment</p>
+                {activeSubscriptions.length > 0 ? (() => {
+                  const nextSub = [...activeSubscriptions].sort((a, b) => new Date(a.renewalDate).getTime() - new Date(b.renewalDate).getTime())[0];
+                  return (
+                    <>
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Next Payment</p>
+                        </div>
+                        <div className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-bold px-2 py-1 rounded border border-red-100 dark:border-red-500/20">
+                          {new Date(nextSub.renewalDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{nextSub.name}</h3>
+                      
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded ${nextSub.bg || 'bg-gray-100'} flex items-center justify-center p-1 border border-white/10 shrink-0`}>
+                          <span className={`${nextSub.color || 'text-gray-900'} font-bold text-xs`}>{renderIcon(nextSub)}</span>
+                        </div>
+                        <div>
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">${nextSub.price.toFixed(2)}</p>
+                          <p className="text-xs text-gray-500">via Wallet</p>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })() : (
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                    <p className="text-sm font-medium">No upcoming payments</p>
                   </div>
-                  <div className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-bold px-2 py-1 rounded border border-red-100 dark:border-red-500/20">
-                    Nov 24
-                  </div>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Netflix</h3>
-                
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded bg-red-50 dark:bg-[#FF0000]/10 flex items-center justify-center p-1 border border-red-100 dark:border-[#FF0000]/20 shrink-0">
-                    <span className="text-[#FF0000] font-bold text-xs">N</span>
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white">$4.99</p>
-                    <p className="text-xs text-gray-500">via Wallet</p>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -401,7 +374,7 @@ const Dashboard: React.FC = () => {
             {/* Subscription Tracker */}
             <div>
               <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4">Subscription Tracker</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                 
                 {subs.length > 0 ? subs.map(sub => (
                    <div key={sub.id} className={`rounded-3xl p-5 border relative group shadow-sm dark:shadow-none hover:translate-y-[-2px] transition-transform ${sub.bg === 'bg-white' ? 'bg-white border-gray-200' : 'bg-gray-900 dark:bg-[#131313] border-white/5 text-white'}`}>
