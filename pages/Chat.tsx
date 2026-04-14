@@ -74,21 +74,31 @@ const Chat: React.FC = () => {
     const fetchThreads = async () => {
       if (!supabaseUser) return;
       
-      const { data, error } = await supabase
-        .from('chat_threads')
-        .select('*')
-        .order('updated_at', { ascending: false });
-        
-      if (error) {
-        console.error("Error fetching threads:", error);
-        // Fallback or handle error
-      } else if (data) {
-        setThreads(data);
-        if (data.length > 0 && !activeThreadId) {
-          setActiveThreadId(data[0].id);
+      try {
+        const { data, error } = await supabase
+          .from('chat_threads')
+          .select('*')
+          .order('updated_at', { ascending: false });
+          
+        if (error) {
+          console.error("Error fetching threads:", error);
+          // Fallback or handle error
+        } else if (data) {
+          setThreads(data);
+          if (data.length > 0 && !activeThreadId) {
+            setActiveThreadId(data[0].id);
+          }
         }
+      } catch (err: any) {
+        const errMsg = typeof err === 'string' ? err : (err?.message || JSON.stringify(err));
+        if (errMsg.includes('Failed to fetch') || errMsg.includes('Supabase not configured')) {
+          console.warn("Network error fetching threads.");
+        } else {
+          console.error("Fetch threads failed:", err);
+        }
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     fetchThreads();
@@ -99,19 +109,28 @@ const Chat: React.FC = () => {
     const fetchMessages = async () => {
       if (!activeThreadId || !supabaseUser) return;
 
-      const { data, error } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .eq('thread_id', activeThreadId)
-        .order('created_at', { ascending: true });
+      try {
+        const { data, error } = await supabase
+          .from('chat_messages')
+          .select('*')
+          .eq('thread_id', activeThreadId)
+          .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error("Error fetching messages:", error);
-      } else if (data) {
-        setMessages(prev => ({
-          ...prev,
-          [activeThreadId]: data
-        }));
+        if (error) {
+          console.error("Error fetching messages:", error);
+        } else if (data) {
+          setMessages(prev => ({
+            ...prev,
+            [activeThreadId]: data
+          }));
+        }
+      } catch (err: any) {
+        const errMsg = typeof err === 'string' ? err : (err?.message || JSON.stringify(err));
+        if (errMsg.includes('Failed to fetch') || errMsg.includes('Supabase not configured')) {
+          console.warn("Network error fetching messages.");
+        } else {
+          console.error("Fetch messages failed:", err);
+        }
       }
     };
 

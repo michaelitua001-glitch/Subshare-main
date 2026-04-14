@@ -12,6 +12,7 @@ import Chat from './pages/Chat';
 import Settings from './pages/Settings';
 import Landing from './pages/Landing';
 import Auth from './pages/Auth';
+import AuthCallback from './pages/AuthCallback';
 import PublicMarketplace from './pages/PublicMarketplace';
 import HowItWorks from './pages/HowItWorks';
 import Pricing from './pages/Pricing';
@@ -42,6 +43,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isPublicPage = [
     '/', 
     '/auth', 
+    '/auth/callback',
     '/public-marketplace', 
     '/how-it-works', 
     '/pricing',
@@ -103,6 +105,7 @@ const App: React.FC = () => {
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/public-marketplace" element={<PublicMarketplace />} />
               <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/pricing" element={<Pricing />} />

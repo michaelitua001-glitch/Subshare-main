@@ -47,6 +47,7 @@ interface UserContextType {
   subtractFromWallet: (amount: number, description: string, category: string) => Promise<boolean>;
   addSubscription: (sub: Omit<Subscription, 'id'>) => Promise<void>;
   logout: () => Promise<void>;
+  mockLogin: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -76,11 +77,28 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [activeSubscriptions, setActiveSubscriptions] = useState<Subscription[]>([]);
 
-  const fetchUserData = async (userId: string) => {
+  const fetchUserData = async (userId: string, authUser?: User) => {
     setIsLoading(true);
     try {
       // Fetch Profile
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      let { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      
+      // If profile doesn't exist, create it
+      if (!profile && authUser) {
+        const newProfile = {
+          id: userId,
+          name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || '',
+          email: authUser.email || '',
+          avatar: authUser.user_metadata?.avatar_url || '',
+          plan: 'Free',
+          wallet_balance: 0
+        };
+        const { data: createdProfile, error } = await supabase.from('profiles').insert(newProfile).select().single();
+        if (!error && createdProfile) {
+          profile = createdProfile;
+        }
+      }
+
       if (profile) {
         setUser({
           id: profile.id,
@@ -90,6 +108,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           plan: profile.plan || 'Free'
         });
         setWalletBalance(profile.wallet_balance || 0);
+      } else if (authUser) {
+        // Fallback if insert fails
+        setUser({
+          id: userId,
+          name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || '',
+          email: authUser.email || '',
+          avatar: authUser.user_metadata?.avatar_url || '',
+          plan: 'Free'
+        });
       }
 
       // Fetch Transactions
@@ -122,41 +149,78 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           bg: sub.bg
         })));
       }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
+    } catch (error: any) {
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('Supabase not configured')) {
+        console.warn("Network error fetching user data, using defaults.");
+      } else {
+        console.error("Error fetching user data:", error);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setSupabaseUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserData(session.user.id);
-      } else {
-        setIsLoading(false);
+    let mounted = true;
+
+    const initSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          const errMsg = typeof error === 'string' ? error : (error.message || JSON.stringify(error));
+          if (errMsg.includes('Lock broken') || errMsg.includes('Failed to fetch') || errMsg.includes('Supabase not configured')) {
+            console.warn('Ignorable session error:', errMsg);
+          } else {
+            console.error("Session error:", error);
+          }
+        }
+        
+        if (mounted) {
+          setSession(session);
+          setSupabaseUser(session?.user ?? null);
+          if (session?.user) {
+            fetchUserData(session.user.id, session.user);
+          } else {
+            setIsLoading(false);
+          }
+        }
+      } catch (error: any) {
+        const errMsg = typeof error === 'string' ? error : (error?.message || JSON.stringify(error));
+        if (errMsg.includes('Lock broken') || errMsg.includes('Failed to fetch') || errMsg.includes('Supabase not configured')) {
+          console.warn('Ignorable session exception:', errMsg);
+        } else {
+          console.error("Failed to fetch session:", error);
+        }
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
-    });
+    };
+
+    initSession();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setSupabaseUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserData(session.user.id);
-      } else {
-        setUser(defaultUser);
-        setWalletBalance(0);
-        setTransactions([]);
-        setActiveSubscriptions([]);
-        setIsLoading(false);
+      if (mounted) {
+        setSession(session);
+        setSupabaseUser(session?.user ?? null);
+        if (session?.user) {
+          fetchUserData(session.user.id, session.user);
+        } else {
+          setUser(defaultUser);
+          setWalletBalance(0);
+          setTransactions([]);
+          setActiveSubscriptions([]);
+          setIsLoading(false);
+        }
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const updateProfile = async (data: Partial<UserProfile>) => {
@@ -302,8 +366,50 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const mockLogin = () => {
+    const mockUser = { id: 'mock-user-123', email: 'test@example.com' } as User;
+    const mockSession = { user: mockUser, access_token: 'mock-token' } as Session;
+    setSession(mockSession);
+    setSupabaseUser(mockUser);
+    setUser({
+      id: 'mock-user-123',
+      name: 'Test User',
+      email: 'test@example.com',
+      avatar: 'https://picsum.photos/seed/test/100/100',
+      plan: 'Free'
+    });
+    setWalletBalance(100);
+    setTransactions([
+      {
+        id: '1',
+        name: 'Welcome Bonus',
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        type: 'Deposit',
+        amount: 100,
+        status: 'Completed',
+        icon: 'P',
+        color: 'text-white',
+        bg: 'bg-green-600'
+      }
+    ]);
+    setIsLoading(false);
+  };
+
   const logout = async () => {
-    await supabase.auth.signOut();
+    if (session?.access_token === 'mock-token') {
+      setSession(null);
+      setSupabaseUser(null);
+      setUser(defaultUser);
+      setWalletBalance(0);
+      setTransactions([]);
+      setActiveSubscriptions([]);
+      return;
+    }
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   return (
@@ -319,7 +425,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addToWallet,
       subtractFromWallet,
       addSubscription,
-      logout
+      logout,
+      mockLogin
     }}>
       {children}
     </UserContext.Provider>

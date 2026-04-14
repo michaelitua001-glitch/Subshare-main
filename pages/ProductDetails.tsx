@@ -33,19 +33,30 @@ const ProductDetails: React.FC = () => {
     const fetchProduct = async () => {
       if (!id) return;
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('id', id)
-        .single();
-        
-      if (error) {
-        console.error("Error fetching product:", error);
-        addToast("Failed to load product details", "error");
-      } else if (data) {
-        setProduct(data);
+      try {
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('id', id)
+          .single();
+          
+        if (error) {
+          console.error("Error fetching product:", error);
+          addToast("Failed to load product details", "error");
+        } else if (data) {
+          setProduct(data);
+        }
+      } catch (err: any) {
+        const errMsg = typeof err === 'string' ? err : (err?.message || JSON.stringify(err));
+        if (errMsg.includes('Failed to fetch') || errMsg.includes('Supabase not configured')) {
+          console.warn("Network error fetching product details.");
+        } else {
+          console.error("Fetch failed:", err);
+          addToast("Failed to load product details", "error");
+        }
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     fetchProduct();
