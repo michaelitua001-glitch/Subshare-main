@@ -26,7 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
-    { icon: MessageSquare, label: 'Messages', path: '/chat', badge: 3 },
+    { icon: MessageSquare, label: 'Messages', path: '/chat' },
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 
