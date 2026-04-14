@@ -346,7 +346,7 @@ const Chat: React.FC = () => {
                    {/* Avatar */}
                    <div className="relative shrink-0">
                       {thread.avatar && thread.avatar.startsWith('http') ? (
-                         <img src={thread.avatar} alt={thread.name} className="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-white/10" />
+                         <img src={thread.avatar || undefined} alt={thread.name} className="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-white/10" />
                       ) : (
                          <div className={`w-12 h-12 rounded-full ${thread.avatar_color || 'bg-gray-500'} flex items-center justify-center font-bold text-white text-lg shadow-sm border border-white/10`}>
                             {thread.avatar || thread.name.charAt(0)}
@@ -417,7 +417,7 @@ const Chat: React.FC = () => {
                   {/* Header Avatar */}
                   <div className="relative">
                     {activeThread.avatar && activeThread.avatar.startsWith('http') ? (
-                       <img src={activeThread.avatar} alt={activeThread.name} className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover" />
+                       <img src={activeThread.avatar || undefined} alt={activeThread.name} className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover" />
                     ) : (
                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full ${activeThread.avatar_color || 'bg-gray-500'} flex items-center justify-center text-white font-bold text-lg`}>
                           {activeThread.avatar || activeThread.name.charAt(0)}
@@ -485,7 +485,7 @@ const Chat: React.FC = () => {
                         {/* Avatar (only for other) */}
                         {!isMe && (
                            activeThread.avatar && activeThread.avatar.startsWith('http') ? (
-                              <img src={activeThread.avatar} className="w-6 h-6 md:w-8 md:h-8 rounded-full object-cover shadow-sm mb-1" alt={msg.senderName || 'User'} />
+                              <img src={activeThread.avatar || undefined} className="w-6 h-6 md:w-8 md:h-8 rounded-full object-cover shadow-sm mb-1" alt={msg.senderName || 'User'} />
                            ) : (
                               <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full ${activeThread.avatar_color || 'bg-gray-500'} flex items-center justify-center text-[10px] font-bold text-white shadow-sm mb-1`}>
                                  {activeThread.avatar || activeThread.name.charAt(0)}

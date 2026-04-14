@@ -19,9 +19,12 @@ import Pricing from './pages/Pricing';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Support from './pages/Support';
+import Onboarding from './pages/Onboarding';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { session, isLoading } = useUser();
+  const { session, isLoading, supabaseUser } = useUser();
+  const location = useLocation();
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-[#131022]">
@@ -32,6 +35,19 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   if (!session) {
     return <Navigate to="/auth" replace />;
   }
+
+  // Check onboarding status
+  const userId = supabaseUser ? supabaseUser.id : 'mock';
+  const hasCompletedOnboarding = localStorage.getItem(`onboarding_completed_${userId}`) === 'true';
+
+  if (!hasCompletedOnboarding && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  if (hasCompletedOnboarding && location.pathname === '/onboarding') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return <>{children}</>;
 };
 
@@ -49,7 +65,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     '/pricing',
     '/privacy',
     '/terms',
-    '/support'
+    '/support',
+    '/onboarding'
   ].includes(location.pathname);
 
   return (
@@ -114,6 +131,7 @@ const App: React.FC = () => {
               <Route path="/support" element={<Support />} />
               
               {/* Protected Routes */}
+              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
               <Route path="/product/:id" element={<ProtectedRoute><ProductDetails /></ProtectedRoute>} />

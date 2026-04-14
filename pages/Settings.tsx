@@ -184,7 +184,7 @@ const Settings: React.FC = () => {
                  <div className="flex flex-col items-center gap-4 shrink-0 mx-auto md:mx-0">
                     <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
                        <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-100 dark:border-white/5 relative">
-                          <img src={formProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
+                          <img src={formProfile.avatar || undefined} alt="Profile" className="w-full h-full object-cover" />
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
                              <Camera className="text-white w-8 h-8" />
                           </div>

@@ -471,7 +471,7 @@ const Dashboard: React.FC = () => {
                         className="flex flex-col items-center gap-2 cursor-pointer group"
                       >
                          <div className="w-12 h-12 rounded-full p-0.5 border-2 border-transparent group-hover:border-primary transition-all">
-                           <img src={u.avatar} className="w-full h-full rounded-full object-cover" alt={u.name} />
+                           <img src={u.avatar || undefined} className="w-full h-full rounded-full object-cover" alt={u.name} />
                          </div>
                          <span className="text-[10px] text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">{u.name}</span>
                       </div>
@@ -499,7 +499,7 @@ const Dashboard: React.FC = () => {
                <div className="flex flex-col items-center mb-6">
                  <div className="w-16 h-16 rounded-full overflow-hidden mb-3 border-4 border-gray-50 dark:border-white/5">
                    {transferUser ? (
-                      <img src={transferUser.avatar} className="w-full h-full object-cover" alt={transferUser.name} />
+                      <img src={transferUser.avatar || undefined} className="w-full h-full object-cover" alt={transferUser.name} />
                    ) : (
                       <div className="w-full h-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-400">
                         <Plus className="w-8 h-8" />

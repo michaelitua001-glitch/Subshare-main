@@ -149,7 +149,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <div className="flex items-center gap-3">
               <img
                 className="w-10 h-10 rounded-full border-2 border-primary object-cover"
-                src={user.avatar}
+                src={user.avatar || undefined}
                 alt="Profile"
               />
               <div className="flex-1 min-w-0">
