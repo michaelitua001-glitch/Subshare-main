@@ -47,7 +47,6 @@ interface UserContextType {
   subtractFromWallet: (amount: number, description: string, category: string) => Promise<boolean>;
   addSubscription: (sub: Omit<Subscription, 'id'>) => Promise<void>;
   logout: () => Promise<void>;
-  mockLogin: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -366,35 +365,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const mockLogin = () => {
-    const mockUser = { id: 'mock-user-123', email: 'test@example.com' } as User;
-    const mockSession = { user: mockUser, access_token: 'mock-token' } as Session;
-    setSession(mockSession);
-    setSupabaseUser(mockUser);
-    setUser({
-      id: 'mock-user-123',
-      name: 'Test User',
-      email: 'test@example.com',
-      avatar: 'https://picsum.photos/seed/test/100/100',
-      plan: 'Free'
-    });
-    setWalletBalance(100);
-    setTransactions([
-      {
-        id: '1',
-        name: 'Welcome Bonus',
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        type: 'Deposit',
-        amount: 100,
-        status: 'Completed',
-        icon: 'P',
-        color: 'text-white',
-        bg: 'bg-green-600'
-      }
-    ]);
-    setIsLoading(false);
-  };
-
   const logout = async () => {
     if (session?.access_token === 'mock-token') {
       setSession(null);
@@ -425,8 +395,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addToWallet,
       subtractFromWallet,
       addSubscription,
-      logout,
-      mockLogin
+      logout
     }}>
       {children}
     </UserContext.Provider>

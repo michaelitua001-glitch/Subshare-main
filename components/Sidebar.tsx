@@ -8,10 +8,12 @@ import {
   Settings, 
   LogOut,
   Infinity as InfinityIcon,
-  X
+  X,
+  Share2
 } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { useNotifications } from '../context/NotificationContext';
+import { useToast } from '../context/ToastContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -21,8 +23,15 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const { user, logout } = useUser();
+  const { addToast } = useToast();
   const { unreadMessagesCount } = useNotifications();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const handleShare = () => {
+    const shareUrl = window.location.origin;
+    navigator.clipboard.writeText(shareUrl);
+    addToast('Link copied! Share this with your friends.', 'success');
+  };
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
@@ -137,6 +146,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             
             <div className="my-4 border-t border-gray-100 dark:border-white/5 mx-2"></div>
             
+            <button 
+              onClick={handleShare}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group"
+            >
+              <Share2 className="w-5 h-5 group-hover:text-primary transition-colors" />
+              <span className="font-medium">Share SubShare</span>
+            </button>
+
             <button 
               onClick={handleLogoutClick}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group"

@@ -8,7 +8,7 @@ import { useUser } from '../context/UserContext';
 const Auth: React.FC = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
-  const { mockLogin } = useUser();
+  const { user } = useUser();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -40,9 +40,7 @@ const Auth: React.FC = () => {
     } catch (error: any) {
       const errMsg = typeof error === 'string' ? error : (error?.message || JSON.stringify(error));
       if (errMsg.includes('Supabase not configured')) {
-        mockLogin();
-        addToast('Supabase connection failed. Using mock login for demonstration.', 'success');
-        navigate('/dashboard');
+        addToast('Authentication is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your project settings.', 'error');
       } else {
         addToast(error.message || 'An error occurred during Google authentication.', 'error');
       }
@@ -85,9 +83,7 @@ const Auth: React.FC = () => {
     } catch (error: any) {
       const errMsg = typeof error === 'string' ? error : (error?.message || JSON.stringify(error));
       if (errMsg.includes('Supabase not configured')) {
-        mockLogin();
-        addToast('Supabase connection failed. Using mock login for demonstration.', 'success');
-        navigate('/dashboard');
+        addToast('Authentication is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your project settings.', 'error');
       } else {
         addToast(error.message || 'An error occurred during authentication.', 'error');
       }
@@ -137,7 +133,7 @@ const Auth: React.FC = () => {
            <div className="relative z-10 mt-8 md:mt-0">
              <div className="flex gap-2 mb-2">
                 {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="w-2 h-2 rounded-full bg-white/30 animate-pulse" style={{ animationDelay: `${i * 0.2}s` }}></div>
+                   <div key={i} className="w-2 h-2 rounded-full bg-white/30 animate-pulse" style={{ animationDelay: `${i * 0.2}s` }}></div>
                 ))}
              </div>
              <p className="text-white/50 text-xs">Trusted by 10,000+ users worldwide</p>

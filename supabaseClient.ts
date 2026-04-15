@@ -12,11 +12,11 @@ export const supabase = createClient(
   supabaseAnonKey || 'placeholder-key',
   {
     global: {
-      fetch: async (...args) => {
+      fetch: async (url, options) => {
         if (!supabaseUrl || !supabaseAnonKey) {
           throw new Error('Supabase not configured');
         }
-        return fetch(...args);
+        return fetch(url, options);
       }
     }
   }
