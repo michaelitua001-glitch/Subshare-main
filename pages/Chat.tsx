@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useUser } from '../context/UserContext';
+import { useNotifications } from '../context/NotificationContext';
 import { supabase } from '../supabaseClient';
 
 // --- Types ---
@@ -45,9 +46,16 @@ interface Thread {
 const Chat: React.FC = () => {
   const { addToast } = useToast();
   const { supabaseUser } = useUser();
+  const { decrementUnreadMessages, setActiveThreadId: setGlobalActiveThreadId } = useNotifications();
   
   // UI State
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [activeThreadId, setActiveThreadIdState] = useState<string | null>(null);
+  
+  const setActiveThreadId = (id: string | null) => {
+    setActiveThreadIdState(id);
+    setGlobalActiveThreadId(id);
+  };
+
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [msgText, setMsgText] = useState('');
@@ -102,6 +110,10 @@ const Chat: React.FC = () => {
     };
 
     fetchThreads();
+
+    return () => {
+      setGlobalActiveThreadId(null);
+    };
   }, [supabaseUser]);
 
   // Fetch Messages for Active Thread
@@ -195,6 +207,11 @@ const Chat: React.FC = () => {
 
   // Handlers
   const handleThreadClick = (id: string) => {
+    const thread = threads.find(t => t.id === id);
+    if (thread && thread.unread > 0) {
+      decrementUnreadMessages(thread.unread);
+    }
+
     setActiveThreadId(id);
     setMobileView('chat');
     

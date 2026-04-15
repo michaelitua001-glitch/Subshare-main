@@ -11,6 +11,7 @@ import {
   X
 } from 'lucide-react';
 import { useUser } from '../context/UserContext';
+import { useNotifications } from '../context/NotificationContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -20,13 +21,14 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const { user, logout } = useUser();
+  const { unreadMessagesCount } = useNotifications();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
     { icon: Wallet, label: 'Wallet', path: '/wallet' },
-    { icon: MessageSquare, label: 'Messages', path: '/chat' },
+    { icon: MessageSquare, label: 'Messages', path: '/chat', badge: unreadMessagesCount > 0 ? unreadMessagesCount : undefined },
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 

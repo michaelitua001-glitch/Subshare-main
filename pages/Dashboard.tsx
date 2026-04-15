@@ -22,6 +22,7 @@ import { AreaChart, Area, ResponsiveContainer, XAxis, Tooltip, YAxis, CartesianG
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { useUser } from '../context/UserContext';
+import { useNotifications } from '../context/NotificationContext';
 
 // --- Types ---
 type TimeRange = '6M' | '1Y' | 'ALL';
@@ -80,6 +81,7 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { activeSubscriptions, transactions, subtractFromWallet, activeSubscriptions: subs } = useUser();
+  const { notifications, unreadNotificationsCount, markAllAsRead, markAsRead } = useNotifications();
 
   // State
   const [timeRange, setTimeRange] = useState<TimeRange>('6M');
@@ -187,7 +189,9 @@ const Dashboard: React.FC = () => {
               className={`w-10 h-10 rounded-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 relative transition-colors shadow-sm dark:shadow-none ${showNotifications ? 'bg-gray-100 dark:bg-white/10' : ''}`}
             >
               <Bell className="w-5 h-5" />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-[#0B0A15]"></span>
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-[#0B0A15]"></span>
+              )}
             </button>
 
             {/* Notifications Dropdown */}
@@ -198,22 +202,24 @@ const Dashboard: React.FC = () => {
               >
                 <div className="flex justify-between items-center p-3 pb-2">
                   <h3 className="font-bold text-sm text-gray-900 dark:text-white">Notifications</h3>
-                  <button className="text-[10px] text-primary hover:underline">Mark all read</button>
+                  <button onClick={markAllAsRead} className="text-[10px] text-primary hover:underline">Mark all read</button>
                 </div>
                 <div className="space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
-                  {[
-                    { text: 'Netflix payment due in 2 days', time: '1h ago', read: false },
-                    { text: 'Sarah accepted your invite', time: '3h ago', read: false },
-                    { text: 'New login from Chrome Windows', time: '1d ago', read: true },
-                  ].map((notif, idx) => (
-                    <div key={idx} className={`p-3 rounded-xl flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors ${!notif.read ? 'bg-blue-50/50 dark:bg-blue-500/5' : ''}`}>
+                  {notifications.length > 0 ? notifications.map((notif) => (
+                    <div 
+                      key={notif.id} 
+                      onClick={() => markAsRead(notif.id)}
+                      className={`p-3 rounded-xl flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors ${!notif.read ? 'bg-blue-50/50 dark:bg-blue-500/5' : ''}`}
+                    >
                       <div className={`w-2 h-2 mt-1.5 rounded-full shrink-0 ${!notif.read ? 'bg-primary' : 'bg-gray-300 dark:bg-white/20'}`}></div>
                       <div>
                         <p className={`text-xs ${!notif.read ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-500 dark:text-gray-400'}`}>{notif.text}</p>
                         <p className="text-[10px] text-gray-400 mt-1">{notif.time}</p>
                       </div>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="p-8 text-center text-gray-400 text-xs">No notifications</div>
+                  )}
                 </div>
                 <div className="p-2 border-t border-gray-100 dark:border-white/5 mt-1">
                    <button className="w-full py-2 text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">View All History</button>

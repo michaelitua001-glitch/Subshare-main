@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { Menu, Infinity as InfinityIcon, Loader2 } from 'lucide-react';
 import { ToastProvider } from './context/ToastContext';
-import { UserProvider, useUser } from './context/UserContext'; // Import UserProvider
+import { UserProvider, useUser } from './context/UserContext';
+import { NotificationProvider } from './context/NotificationContext';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Marketplace from './pages/Marketplace';
@@ -118,28 +119,30 @@ const App: React.FC = () => {
     <HashRouter>
       <ToastProvider>
         <UserProvider>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
-              <Route path="/public-marketplace" element={<PublicMarketplace />} />
-              <Route path="/how-it-works" element={<HowItWorks />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/support" element={<Support />} />
-              
-              {/* Protected Routes */}
-              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
-              <Route path="/product/:id" element={<ProtectedRoute><ProductDetails /></ProtectedRoute>} />
-              <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
-              <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            </Routes>
-          </Layout>
+          <NotificationProvider>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Landing />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path="/public-marketplace" element={<PublicMarketplace />} />
+                <Route path="/how-it-works" element={<HowItWorks />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/support" element={<Support />} />
+                
+                {/* Protected Routes */}
+                <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+                <Route path="/product/:id" element={<ProtectedRoute><ProductDetails /></ProtectedRoute>} />
+                <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
+                <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              </Routes>
+            </Layout>
+          </NotificationProvider>
         </UserProvider>
       </ToastProvider>
     </HashRouter>
