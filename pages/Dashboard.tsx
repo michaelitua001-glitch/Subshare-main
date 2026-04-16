@@ -31,16 +31,38 @@ interface QuickUser {
   id: string;
   name: string;
   avatar: string;
+  color?: string;
 }
 
 // --- Mock Data (Charts Only) ---
 const chartDataSets: Record<TimeRange, { name: string; value: number }[]> = {
-  '6M': [],
-  '1Y': [],
-  'ALL': []
+  '6M': [
+    { name: 'Jan', value: 45 },
+    { name: 'Feb', value: 52 },
+    { name: 'Mar', value: 48 },
+    { name: 'Apr', value: 61 },
+    { name: 'May', value: 55 },
+    { name: 'Jun', value: 67 },
+  ],
+  '1Y': [
+    { name: '2023 Q3', value: 450 },
+    { name: '2023 Q4', value: 520 },
+    { name: '2024 Q1', value: 480 },
+    { name: '2024 Q2', value: 610 },
+  ],
+  'ALL': [
+    { name: '2022', value: 1200 },
+    { name: '2023', value: 1850 },
+    { name: '2024', value: 1100 },
+  ]
 };
 
-const quickUsers: QuickUser[] = [];
+const quickUsers: QuickUser[] = [
+  { id: '1', name: 'Alex', avatar: 'https://picsum.photos/seed/alex/100/100', color: 'bg-blue-500' },
+  { id: '2', name: 'Sarah', avatar: 'https://picsum.photos/seed/sarah/100/100', color: 'bg-purple-500' },
+  { id: '3', name: 'David', avatar: 'https://picsum.photos/seed/david/100/100', color: 'bg-green-500' },
+  { id: '4', name: 'Elena', avatar: 'https://picsum.photos/seed/elena/100/100', color: 'bg-amber-500' },
+];
 
 // --- Components ---
 
@@ -80,7 +102,7 @@ const CircularProgress: React.FC<{ percentage: number; color: string; size?: num
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
-  const { activeSubscriptions, transactions, subtractFromWallet, activeSubscriptions: subs } = useUser();
+  const { walletBalance, activeSubscriptions, transactions, subtractFromWallet, activeSubscriptions: subs } = useUser();
   const { notifications, unreadNotificationsCount, markAllAsRead, markAsRead } = useNotifications();
 
   // State
@@ -551,7 +573,7 @@ const Dashboard: React.FC = () => {
                     <CreditCard className="w-5 h-5 text-gray-400" />
                     <div className="flex-1">
                        <p className="text-xs font-bold text-gray-900 dark:text-white">Wallet Balance</p>
-                       <p className="text-[10px] text-gray-500">Available: ${activeSubscriptions.length > 0 ? '1,248.50' : '200.00'}</p>
+                       <p className="text-[10px] text-gray-500">Available: ${walletBalance.toFixed(2)}</p>
                     </div>
                     <CheckCircle2 className="w-5 h-5 text-primary" />
                  </div>

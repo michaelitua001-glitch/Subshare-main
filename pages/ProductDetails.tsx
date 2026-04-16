@@ -35,7 +35,7 @@ const ProductDetails: React.FC = () => {
       setIsLoading(true);
       try {
         const { data, error } = await supabase
-          .from('subscriptions')
+          .from('marketplace_listings')
           .select('*')
           .eq('id', id)
           .single();

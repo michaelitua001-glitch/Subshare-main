@@ -32,7 +32,16 @@ interface PaymentCard {
   color: string; // Gradient class
 }
 
-const initialCards: PaymentCard[] = [];
+const initialCards: PaymentCard[] = [
+  {
+    id: '1',
+    type: 'Visa',
+    last4: '4242',
+    expiry: '12/26',
+    holder: 'MICHAEL ITUA',
+    color: 'bg-gradient-to-br from-indigo-600 to-purple-800'
+  }
+];
 
 const Wallet: React.FC = () => {
   const { addToast } = useToast();

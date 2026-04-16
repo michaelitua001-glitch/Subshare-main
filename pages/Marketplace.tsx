@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
+import { useUser } from '../context/UserContext';
+import { supabase } from '../supabaseClient';
 
 // --- Types ---
 interface Listing {
@@ -76,14 +78,123 @@ function LayoutGridIcon() {
 }
 
 // --- Initial Data ---
-const initialListings: Listing[] = [];
+const initialListings: Listing[] = [
+  {
+    id: '1',
+    name: 'Netflix Premium',
+    plan: 'Ultra HD 4K',
+    price: 4.99,
+    cycle: '/mo',
+    slots: '1 slot left',
+    billing: 'Monthly',
+    icon: 'N',
+    color: 'text-red-600',
+    bg: 'bg-black',
+    verified: true,
+    full: false,
+    watched: false,
+    category: 'Video',
+    renewable: true,
+    timestamp: Date.now() - 86400000
+  },
+  {
+    id: '2',
+    name: 'Spotify Family',
+    plan: 'Premium Individual Slot',
+    price: 2.50,
+    cycle: '/mo',
+    slots: '3 slots left',
+    billing: 'Monthly',
+    icon: <Music className="w-6 h-6" />,
+    color: 'text-black',
+    bg: 'bg-[#1DB954]',
+    verified: true,
+    full: false,
+    watched: false,
+    category: 'Music',
+    renewable: true,
+    timestamp: Date.now() - 172800000
+  },
+  {
+    id: '3',
+    name: 'YouTube Premium',
+    plan: 'Family Group Slot',
+    price: 3.00,
+    cycle: '/mo',
+    slots: '2 slots left',
+    billing: 'Monthly',
+    icon: 'YT',
+    color: 'text-white',
+    bg: 'bg-[#FF0000]',
+    verified: true,
+    full: false,
+    watched: false,
+    category: 'Video',
+    renewable: true,
+    timestamp: Date.now() - 259200000
+  },
+  {
+    id: '4',
+    name: 'Disney+ Bundle',
+    plan: 'Hulu + Disney+',
+    price: 5.50,
+    cycle: '/mo',
+    slots: 'Full',
+    billing: 'Monthly',
+    icon: 'D+',
+    color: 'text-white',
+    bg: 'bg-[#0063E5]',
+    verified: false,
+    full: true,
+    watched: false,
+    category: 'Video',
+    renewable: true,
+    timestamp: Date.now() - 345600000
+  }
+];
 
 const Marketplace: React.FC = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { user } = useUser();
   
   // --- State ---
-  const [listings, setListings] = useState<Listing[]>(initialListings);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch from Supabase
+  useEffect(() => {
+    const fetchListings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('marketplace_listings')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          console.warn("Marketplace fetch error (table might not exist yet):", error.message);
+          setListings(initialListings);
+        } else if (data && data.length > 0) {
+          // Map DB fields to Listing interface if needed
+          const mappedListings = data.map((item: any) => ({
+            ...item,
+            id: item.id.toString(),
+            timestamp: new Date(item.created_at).getTime(),
+            watched: false // Local state
+          }));
+          setListings([...mappedListings, ...initialListings]);
+        } else {
+          setListings(initialListings);
+        }
+      } catch (err) {
+        setListings(initialListings);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchListings();
+  }, []);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -163,52 +274,85 @@ const Marketplace: React.FC = () => {
   }, [selectedCategory, searchQuery, priceRange, sortBy, verifiedOnly, renewableOnly, watchlistOnly]);
 
   // --- Handlers ---
-  const handleCreateListing = (e: React.FormEvent) => {
+  const handleCreateListing = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+        addToast('Please login to create a listing', 'error');
+        return;
+    }
     setIsProcessing(true);
     
-    setTimeout(() => {
-      // Pick icon/color logic
-      let icon: any = newListing.service[0];
-      let bg = 'bg-gray-900';
-      let color = 'text-white';
-      let category = 'Video';
+    // Pick icon/color logic
+    let iconStr = newListing.service[0];
+    let bg = 'bg-gray-900';
+    let color = 'text-white';
+    let category = 'Video';
 
-      if (newListing.service === 'Netflix') { icon = 'N'; bg='bg-black'; color='text-red-600'; category = 'Video'; }
-      if (newListing.service === 'Spotify') { icon = <Music className="w-6 h-6" />; bg='bg-[#1db954]'; color='text-black'; category = 'Music'; }
-      if (newListing.service === 'Disney+') { icon = 'D+'; bg='bg-[#0063e5]'; color='text-white'; category = 'Video'; }
-      
-      const item: Listing = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: newListing.service + ' Premium',
-        plan: newListing.plan || 'Family Plan',
-        price: parseFloat(newListing.price),
-        cycle: '/mo',
-        slots: `${newListing.slots} slots left`,
-        billing: 'Monthly',
-        icon: icon,
-        color: color,
-        bg: bg,
-        verified: true,
-        full: false,
-        watched: false,
-        category: category,
-        renewable: true,
-        timestamp: Date.now()
-      };
+    if (newListing.service === 'Netflix') { iconStr = 'N'; bg='bg-black'; color='text-red-600'; category = 'Video'; }
+    if (newListing.service === 'Spotify') { iconStr = 'S'; bg='bg-[#1db954]'; color='text-black'; category = 'Music'; }
+    if (newListing.service === 'Disney+') { iconStr = 'D+'; bg='bg-[#0063e5]'; color='text-white'; category = 'Video'; }
 
-      setListings([item, ...listings]);
+    const itemData = {
+      name: newListing.service + ' Premium',
+      plan: newListing.plan || 'Family Plan',
+      price: parseFloat(newListing.price),
+      cycle: '/mo',
+      slots: `${newListing.slots} slots left`,
+      billing: 'Monthly',
+      icon: iconStr,
+      color: color,
+      bg: bg,
+      verified: true,
+      full: false,
+      category: category,
+      renewable: true,
+      seller_id: user.id,
+      seller_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Anonymous'
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from('marketplace_listings')
+        .insert([itemData])
+        .select()
+        .single();
+
+      if (error) {
+          console.error("Listing creation error:", error);
+          // Fallback to local state for demo if table doesn't exist
+          const localItem: Listing = {
+              ...itemData,
+              id: Math.random().toString(36).substr(2, 9),
+              icon: iconStr === 'S' ? <Music className="w-6 h-6" /> : iconStr,
+              watched: false,
+              timestamp: Date.now()
+          } as any;
+          setListings([localItem, ...listings]);
+          addToast('Listing created locally (Supabase table pending)', 'info');
+      } else {
+          const newItem: Listing = {
+              ...data,
+              id: data.id.toString(),
+              timestamp: new Date(data.created_at).getTime(),
+              watched: false,
+              icon: data.icon === 'S' ? <Music className="w-6 h-6" /> : data.icon
+          } as any;
+          setListings([newItem, ...listings]);
+          addToast('Listing created successfully!', 'success');
+      }
+    } catch (err) {
+        addToast('Failed to create listing', 'error');
+    } finally {
       setIsProcessing(false);
       setShowSellModal(false);
       setNewListing({ service: 'Netflix', price: '', slots: '1', plan: '' });
-      addToast('Listing created successfully!', 'success');
       
       // Auto-switch to All so user sees their listing if they were filtered
-      if (selectedCategory !== 'All' && selectedCategory !== category) {
+      if (selectedCategory !== 'All') {
           setSelectedCategory('All');
       }
       setSearchQuery('');
-    }, 1500);
+    }
   };
 
   const toggleWatchlist = (id: string) => {
