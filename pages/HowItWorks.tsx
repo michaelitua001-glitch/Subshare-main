@@ -160,12 +160,12 @@ const HowItWorks: React.FC = () => {
               </div>
             </div>
             <div>
-              <h3 className="text-3xl font-bold mb-4">2. Secure Payment & Escrow</h3>
-              <p className="text-gray-400 text-lg mb-6">Pay securely using your preferred payment method. We hold your funds in escrow and only release them to the seller once you confirm the subscription works perfectly.</p>
+              <h3 className="text-3xl font-bold mb-4">2. Secure Payment & SubShare Wallet</h3>
+              <p className="text-gray-400 text-lg mb-6">Pay securely using your SubShare Wallet. Funds are held in our secure escrow system and are only released to the group owner once you confirm the service is working perfectly.</p>
               <ul className="space-y-3 text-gray-300">
-                <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-purple-500" /> Buyer protection guarantee</li>
-                <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-purple-500" /> Cancel anytime</li>
-                <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-purple-500" /> No hidden fees</li>
+                <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-purple-500" /> Buyer protection via Escrow</li>
+                <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-purple-500" /> One-click Wallet top-ups</li>
+                <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-purple-500" /> No hidden transaction fees</li>
               </ul>
             </div>
           </div>
@@ -190,8 +190,8 @@ const HowItWorks: React.FC = () => {
                     <div className="text-3xl font-bold text-white">4</div>
                   </div>
                   <div className="flex-1 bg-white/5 rounded-xl p-5 border border-white/5">
-                    <div className="text-gray-400 text-xs mb-2">Monthly Savings</div>
-                    <div className="text-3xl font-bold text-green-400">$42.50</div>
+                    <div className="text-gray-400 text-xs mb-2">Wallet Balance</div>
+                    <div className="text-3xl font-bold text-green-400">$248.50</div>
                   </div>
                 </div>
                 <div className="bg-[#0B0A15] rounded-xl p-5 border border-white/5">
@@ -298,8 +298,8 @@ const HowItWorks: React.FC = () => {
                <div className="w-16 h-16 rounded-2xl bg-teal-500/10 flex items-center justify-center text-teal-500 mb-4">
                  <DollarSign className="w-8 h-8" />
                </div>
-               <h3 className="text-xl font-bold">3. Get Paid</h3>
-               <p className="text-gray-400 leading-relaxed">Receive instant payouts to your wallet the moment a buyer joins. Withdraw your earnings to your bank account anytime, 24/7.</p>
+               <h3 className="text-xl font-bold">3. Get Paid Instantly</h3>
+               <p className="text-gray-400 leading-relaxed">Earnings are credited to your SubShare Wallet the moment a buyer joins. Withdraw your funds 24/7 or use them to join other subscription groups.</p>
             </div>
           </div>
         </div>
@@ -315,7 +315,7 @@ const HowItWorks: React.FC = () => {
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-white/5 text-sm text-gray-500 bg-[#0B0A15]">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
-          <p>© 2023 SubShare Inc. All rights reserved.</p>
+          <p>© 2024 SubShare Inc. All rights reserved.</p>
           <div className="flex gap-6 justify-center">
             <button onClick={() => navigate('/privacy')} className="hover:text-white transition-colors">Privacy</button>
             <button onClick={() => navigate('/terms')} className="hover:text-white transition-colors">Terms</button>
